@@ -2123,7 +2123,7 @@ get_mentioned_gkg_themes <- function(gdelt_data,
 
   all_counts <-
     1:length(counts_data$theme_col) %>%
-    map(function(x) {
+    purrr::map(function(x) {
       parse_mentioned_names_themes(field = counts_data$theme_col[x],
                                    return_wide = return_wide) %>%
         dplyr::mutate(idGKG = counts_data$idGKG[x])
@@ -3380,7 +3380,7 @@ get_data_gkg_day_detailed <- function(date_data = "2016-06-01",
 
   all_data <-
     urls %>%
-    map(function(x) {
+    purrr::map(function(x) {
       get_gdelt_url_data_safe(
         url = x,
         remove_files = remove_files,
@@ -3413,7 +3413,7 @@ get_data_gkg_day_detailed <- function(date_data = "2016-06-01",
 #' @param remove_files
 #' @param empty_trash
 #' @param return_message
-#'
+#' @importFrom purrr map
 #' @return
 #' @export
 #'
@@ -3430,7 +3430,7 @@ get_data_gkg_days_detailed <- function(dates = c("2016-06-01"),
 
   all_data <-
     dates %>%
-    map(
+    purrr::map(
       function(x)
         get_data_gkg_day_detailed_safe(
           date_data = x,
@@ -3443,7 +3443,8 @@ get_data_gkg_days_detailed <- function(dates = c("2016-06-01"),
         )
     ) %>%
     purrr::compact %>%
-    bind_rows
+    bind_rows %>%
+    suppressWarnings()
 
   all_data <-
     all_data %>%
@@ -3518,7 +3519,7 @@ get_data_gkg_day_summary <- function(date_data = "2016-06-01",
 
   all_data <-
     urls %>%
-    map(function(x) {
+    purrr::map(function(x) {
       get_gdelt_url_data_safe(
         url = x,
         remove_files = remove_files,
@@ -3641,7 +3642,7 @@ get_data_gdelt_period_event <- function(period = 1983,
 
   all_data <-
     urls %>%
-    map(function(x) {
+    purrr::map(function(x) {
       get_gdelt_url_data_safe(
         url = x,
         remove_files = remove_files,
@@ -3987,7 +3988,7 @@ get_data_cv_day <-
 
     all_data <-
       urls %>%
-      map(function(x) {
+      purrr::map(function(x) {
         get_data_cv_url_safe(
           url = x,
           remove_files = remove_files,
@@ -4033,7 +4034,10 @@ get_data_cv_dates <-
            remove_files = T,
            empty_trash = T,
            return_message = T) {
-
+    if (only_most_recent == T) {
+      dates <-
+        Sys.Date()
+    }
     get_data_cv_day_safe <-
       failwith(NULL, get_data_cv_day)
 
@@ -4055,7 +4059,8 @@ get_data_cv_dates <-
 
     all_data <-
       all_data %>%
-      mutate(idDateTime = 1:n())
+      mutate(idDateTime = 1:n()) %>%
+      distinct()
 
     return(all_data)
 
