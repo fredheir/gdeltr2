@@ -8,7 +8,7 @@ get_mentioned_gkg_organizations(gdelt_data,
   organization_column = "organizations", filter_na = T, return_wide = F)
 }
 \arguments{
-\item{organization_column}{options \code{c('organization', 'organizations', 'organizations.count', 'organizations.char_loc', 'char_loc'))}}
+\item{organization_column}{options \code{c('organization', 'organizations', 'organizations.count', 'organizationsCharLoc', 'charLoc'))}}
 
 \item{return_wide}{}
 }

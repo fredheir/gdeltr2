@@ -5,10 +5,10 @@
 \title{Returns mentioned locations from a gkg data frame}
 \usage{
 get_mentioned_gkg_locations(gdelt_data, location_column = "locations",
-  is.char_loc = F, filter_na = T, return_wide = F)
+  isCharLoc = F, filter_na = T, return_wide = F)
 }
 \arguments{
-\item{location_column}{options \code{c('location', 'locations', 'locations.char_loc', 'location.char_loc', 'char.loc'))}}
+\item{location_column}{options \code{c('location', 'locations', 'locationsCharLoc', 'locationCharLoc', 'charLoc'))}}
 
 \item{return_wide}{}
 }

@@ -5,8 +5,8 @@
 \title{Get dates detailed data from a specified table}
 \usage{
 get_data_gkg_days_detailed(dates = c("2016-06-01"), table_name = "gkg",
-  file_directory = "Desktop/temp_gdelt_data", remove_files = T,
-  empty_trash = T, return_message = T)
+  file_directory = "Desktop/temp_gdelt_data", only_most_recent = F,
+  remove_files = T, empty_trash = T, return_message = T)
 }
 \arguments{
 \item{return_message}{}

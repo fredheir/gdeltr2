@@ -8,7 +8,7 @@ get_mentioned_gkg_people(gdelt_data, people_column = "persons",
   filter_na = T, return_wide = F)
 }
 \arguments{
-\item{people_column}{options \code{c('person', 'persons', 'persons.count', 'persons.char_loc', 'char_loc'))}}
+\item{people_column}{options \code{c('person', 'persons', 'persons.count', 'personsCharLoc', 'charLoc'))}}
 
 \item{return_wide}{}
 }

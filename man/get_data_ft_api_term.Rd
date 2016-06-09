@@ -5,10 +5,10 @@
 \title{Returns data frame for given term from GDELT free text API}
 \usage{
 get_data_ft_api_term(term = "\\"Brooklyn Nets\\"", domain = NA,
-  return_image_url = T, last_minutes = NA, max_rows = 1000,
+  dedeup_results = T, restrict_to_usa = F, last_minutes = NA,
+  max_rows = 1000, only_english = T, return_image_url = T,
   tone_less_than = NA, tone_more_than = NA, search_language = "English",
-  source_language = "English", sort_by = "date", dedeup_results = T,
-  only_english = T, return_message = T)
+  source_language = "English", sort_by = "date", return_message = T)
 }
 \arguments{
 \item{term}{any word, can be quoted or not}

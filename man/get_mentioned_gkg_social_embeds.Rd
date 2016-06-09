@@ -5,13 +5,13 @@
 \title{Returns social embed information from a gkg data frame}
 \usage{
 get_mentioned_gkg_social_embeds(gdelt_data,
-  social_embed_column = "url.social_media_image.embeds", filter_na = T,
+  social_embed_column = "urlSocialMediaImageEmbeds", filter_na = T,
   return_wide = F)
 }
 \arguments{
 \item{return_wide}{}
 
-\item{organization_column}{options \code{c('url.social_media_image.embeds', 'images', 'url.social_media_video.embeds', 'video', 'videos'))}}
+\item{organization_column}{options \code{c('urlSocialMediaImageEmbeds', 'images', 'urlSocialMediaVideoEmbeds', 'video', 'videos'))}}
 }
 \description{
 Returns social embed information from a gkg data frame

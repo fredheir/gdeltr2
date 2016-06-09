@@ -12,7 +12,4 @@ get_schema_gkg_counts()
 \description{
 Gets gkg count schema
 }
-\examples{
-get_schema_gkg_counts
-}
 

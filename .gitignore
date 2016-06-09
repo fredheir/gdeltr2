@@ -4,3 +4,4 @@
 .Ruserdata
 packrat/
 .Rprofile
+.httr-oauth

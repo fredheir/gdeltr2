@@ -274,7 +274,7 @@ get_data_ft_api_term <-
       stop("This search has no data")
     }
 
-    url.text <-
+    titleArticle <-
       page %>%
       html_nodes(xpath = '//b') %>%
       html_text %>%
@@ -294,26 +294,26 @@ get_data_ft_api_term <-
     url_df <-
       data_frame(
         term,
-        url.text,
-        url.article = url.source,
-        date.data = Sys.time(),
-        url.search = url
+        titleArticle,
+        urlArticle = url.source,
+        date_timeData = Sys.time(),
+        urlSearch = url
       ) %>%
       bind_cols(sources %>%
                   parse_source()) %>%
       suppressWarnings()
 
     if (return_image_url == T) {
-      url.thumbnail <-
+      urlThumbnail <-
         page %>%
         html_nodes(xpath = '//*[contains(concat( " ", @class, " " ), concat( " ", "thumbimg", " " ))]') %>%
         html_attr('src')
 
-      url.thumbnail[url.thumbnail == ''] <-
+      urlThumbnail[urlThumbnail == ''] <-
         NA
 
       url_df %<>%
-        mutate(url.thumbnail)
+        mutate(urlThumbnail)
 
     }
 
@@ -341,8 +341,13 @@ get_data_ft_api_term <-
 
     url_df <-
       url_df %>%
-      mutate(domain.article = urltools::domain(url.article) %>% str_replace_all('www.', '')) %>%
-      dplyr::select(term:url.article, domain.article, everything())
+      mutate(domainArticle = urltools::domain(urlArticle) %>% str_replace_all('www.', '')) %>%
+      dplyr::select(term:urlArticle, domainArticle, everything()) %>%
+      dplyr::rename(date_timeArticle = date_time,
+                    dateArticle = date,
+                    countryArticle = country,
+                    languageArticle = language,
+                    sourceArticle = source)
 
     if (term %>% is.na()) {
       url_df <-
@@ -353,7 +358,7 @@ get_data_ft_api_term <-
     if (restrict_to_usa == T) {
       url_df <-
         url_df %>%
-        dplyr::filter(country == 'United States')
+        dplyr::filter(countryArticle == 'United States')
     }
 
     if (return_message == T) {
@@ -489,7 +494,7 @@ get_data_ft_api_domains <- function(domains = c('washingtonpost.com', 'nytimes.c
   if (use_exact_domains == T) {
     all_data <-
       all_data %>%
-      dplyr::filter(domain.article %in% domains)
+      dplyr::filter(domainArticle %in% domains)
   }
 
   return(all_data)
@@ -672,7 +677,7 @@ get_data_wordcloud_ft_api <-
     wordcloud_data <-
       url %>%
       read_csv() %>%
-      mutate(term, url, date.date = Sys.time()) %>%
+      mutate(term, url, date_timeData = Sys.time()) %>%
       dplyr::select(term, everything())
 
   names(wordcloud_data)[2:3] <-
@@ -681,10 +686,12 @@ get_data_wordcloud_ft_api <-
     wordcloud_data <-
       wordcloud_data %>%
       tidyr::separate(articles,
-                      into = c('count.articles', 'size'),
+                      into = c('countArticles', 'size'),
                       sep = '\\(') %>%
-      mutate(count.articles = count.articles %>% extract_numeric(),
-             size = size %>% extract_numeric)
+      mutate(countArticles = countArticles %>% extract_numeric(),
+             size = size %>% extract_numeric) %>%
+      dplyr::rename(urlSearch = url,
+                    sizeWord = size)
 
     if (!domain %>% is.na) {
       wordcloud_data %<>%
@@ -987,7 +994,7 @@ get_data_sentiment_ft_api <- function(term = 'Clinton',
   }
   if (is_tone == T) {
     value_name <-
-      'value.tone'
+      'valueTone'
     output_slug <-
       '&output=timelinecsv&outputtype=tone'
   } else {
@@ -1020,7 +1027,7 @@ get_data_sentiment_ft_api <- function(term = 'Clinton',
   sentiment_data <-
     url %>%
     readr::read_csv() %>%
-    mutate(term, url, date.date = Sys.time()) %>%
+    mutate(term, url, date_timeData = Sys.time()) %>%
     dplyr::select(term, everything())
 
 
@@ -1032,11 +1039,12 @@ get_data_sentiment_ft_api <- function(term = 'Clinton',
 
   sentiment_data %<>%
     mutate(
-      date_time.sentiment = date_time_human.url %>% lubridate::mdy_hms(tz = 'UTC') %>%  with_tz(Sys.timezone()),
-      date.sentiment = date_time_human.url %>% lubridate::mdy_hms(tz = 'UTC') %>% as.Date()
+      date_timeSentiment = date_time_human.url %>% lubridate::mdy_hms(tz = 'UTC') %>%  with_tz(Sys.timezone()),
+      dateSentiment = date_time_human.url %>% lubridate::mdy_hms(tz = 'UTC') %>% as.Date()
     ) %>%
     dplyr::select(-c(date_time.url, date_time_human.url)) %>%
-    dplyr::select(term, date_time.sentiment, date.sentiment, everything())
+    dplyr::select(term, date_timeSentiment, dateSentiment, everything()) %>%
+    dplyr::rename(urlSearch = url, date_timeData = date_timeData)
 
   if (!domain %>% is.na) {
     sentiment_data %<>%
