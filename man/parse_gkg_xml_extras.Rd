@@ -6,9 +6,6 @@
 \usage{
 parse_gkg_xml_extras(gdelt_data, filter_na = T, return_wide = F)
 }
-\arguments{
-\item{return_wide}{}
-}
 \description{
 Parses XML Extras
 }

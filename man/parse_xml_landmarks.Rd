@@ -4,10 +4,10 @@
 \alias{parse_xml_landmarks}
 \title{Parses XML Landmarks}
 \usage{
-parse_xml_landmarks(data, id_date_time = 886)
+parse_xml_landmarks(data, id_vgkg = "20160610194500-2247")
 }
 \arguments{
-\item{id_date_time}{}
+\item{id_vgkg}{}
 }
 \value{
 

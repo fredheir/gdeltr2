@@ -42,8 +42,8 @@ parse_source <- function(source = "netsdaily.com - writedate('06/02/2016 12:00 U
       date = date %>% gsub('\\writedate', '', .) %>% str_replace_all('\\(', '') %>% str_replace_all('\\)', '') %>%
         str_replace_all("\\'", '')
     ) %>%
-    mutate(date_time = date %>% mdy_hm %>% with_tz(Sys.timezone())) %>%
-    mutate(date = date_time %>% as.Date) %>%
+    mutate(dateTime = date %>% mdy_hm %>% with_tz(Sys.timezone())) %>%
+    mutate(date = dateTime %>% as.Date) %>%
     tidyr::separate(language,
                     into = c('language', 'country'),
                     sep = '\\, ') %>%
@@ -296,7 +296,7 @@ get_data_ft_api_term <-
         term,
         titleArticle,
         urlArticle = url.source,
-        date_timeData = Sys.time(),
+        dateTimeData = Sys.time(),
         urlSearch = url
       ) %>%
       bind_cols(sources %>%
@@ -343,7 +343,7 @@ get_data_ft_api_term <-
       url_df %>%
       mutate(domainArticle = urltools::domain(urlArticle) %>% str_replace_all('www.', '')) %>%
       dplyr::select(term:urlArticle, domainArticle, everything()) %>%
-      dplyr::rename(date_timeArticle = date_time,
+      dplyr::rename(dateTimeArticle = dateTime,
                     dateArticle = date,
                     countryArticle = country,
                     languageArticle = language,
@@ -423,7 +423,8 @@ get_data_ft_api_terms <-
           )
       ) %>%
       compact %>%
-      bind_rows
+      bind_rows %>%
+      arrange(desc(dateTimeArticle))
 
     return(all_data)
 
@@ -483,7 +484,8 @@ get_data_ft_api_domains <- function(domains = c('washingtonpost.com', 'nytimes.c
         )
     ) %>%
     compact %>%
-    bind_rows
+    bind_rows %>%
+    arrange(desc(dateTimeArticle))
 
   if (term %>% is.na()) {
     all_data <-
@@ -677,7 +679,7 @@ get_data_wordcloud_ft_api <-
     wordcloud_data <-
       url %>%
       read_csv() %>%
-      mutate(term, url, date_timeData = Sys.time()) %>%
+      mutate(term, url, dateTimeData = Sys.time()) %>%
       dplyr::select(term, everything())
 
   names(wordcloud_data)[2:3] <-
@@ -1027,24 +1029,24 @@ get_data_sentiment_ft_api <- function(term = 'Clinton',
   sentiment_data <-
     url %>%
     readr::read_csv() %>%
-    mutate(term, url, date_timeData = Sys.time()) %>%
+    mutate(term, url, dateTimeData = Sys.time()) %>%
     dplyr::select(term, everything())
 
 
   names(sentiment_data)[2:3] <-
-    c('date_time.url', 'date_time_human.url')
+    c('dateTime.url', 'dateTime_human.url')
 
   names(sentiment_data)[4] <-
     value_name
 
   sentiment_data %<>%
     mutate(
-      date_timeSentiment = date_time_human.url %>% lubridate::mdy_hms(tz = 'UTC') %>%  with_tz(Sys.timezone()),
-      dateSentiment = date_time_human.url %>% lubridate::mdy_hms(tz = 'UTC') %>% as.Date()
+      dateTimeSentiment = dateTime_human.url %>% lubridate::mdy_hms(tz = 'UTC') %>%  with_tz(Sys.timezone()),
+      dateSentiment = dateTime_human.url %>% lubridate::mdy_hms(tz = 'UTC') %>% as.Date()
     ) %>%
-    dplyr::select(-c(date_time.url, date_time_human.url)) %>%
-    dplyr::select(term, date_timeSentiment, dateSentiment, everything()) %>%
-    dplyr::rename(urlSearch = url, date_timeData = date_timeData)
+    dplyr::select(-c(dateTime.url, dateTime_human.url)) %>%
+    dplyr::select(term, dateTimeSentiment, dateSentiment, everything()) %>%
+    dplyr::rename(urlSearch = url, dateTimeData = dateTimeData)
 
   if (!domain %>% is.na) {
     sentiment_data %<>%

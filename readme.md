@@ -9,13 +9,14 @@ gdeltr2
 <blockquote>
 construct a catalog of human societal-scale behavior and beliefs across all countries of the world, connecting every person, organization, location, count, theme, news source, and event across the planet into a single massive network that captures what's happening around the world, what its context is and who's involved, and how the world is feeling about it, every single day.
 </blockquote>
-GDELT was founded in 1994 and it's data commences in 1979. Over the last two years the GDELT's functionality and abilities have grown exponentially, for example in May 2014 GDELT processed 3,928,926 where as in May 2016 it processed 6,198,461. GDELT continues to evolve and integrate advanced machine learning tools including [Google Cloud Vision](https://cloud.google.com/vision/) \[Not integrated into the package but coming soon!!\]
+GDELT was founded in 1994 and it's data commences in 1979. Over the last two years the GDELT's functionality and abilities have grown exponentially, for example in May 2014 GDELT processed 3,928,926 where as in May 2016 it processed 6,198,461. GDELT continues to evolve and integrate advanced machine learning tools including [Google Cloud Vision](https://cloud.google.com/vision/), a data store that became available in February 2016.
 
-#### <strong>The project contains three data stores</strong>
+#### <strong>This package wraps GDELT's four primary data stores</strong>
 
 -   [The GDELT Events Database](http://gdeltproject.org/data.html#rawdatafiles) **\[EVENTS\]**: Global Events, 1979 to present.
 -   [The GDELT Global Knowledge Graph](http://gdeltproject.org/data.html#rawdatafiles) **\[GKG\]** : GDELT's Knowledge Graph, April 2013 to present.
--   [The GDELT Free Text API](http://blog.gdeltproject.org/announcing-the-gdelt-full-text-search-api/) **[Free Text API](#free-text-api)**: Full text search for all monitored sources within a 24 hour window. Output includes raw data, sentiment, and word counts.
+-   [The GDELT Full Text API](http://blog.gdeltproject.org/announcing-the-gdelt-full-text-search-api/) **[Full Text API](#full-text-api)**: Full text search for all monitored sources within a 24 hour window. Output includes raw data, sentiment, and word counts.
+-   [The GDELT Visual Knowledge Graph](http://blog.gdeltproject.org/gdelt-visual-knowledge-graph-vgkg-v1-0-available/) **VGKG**: Google Cloud Vision API output for every indexed piece of GKG media.
 
 #### <strong>Why gdeltr2?</strong>
 
@@ -53,17 +54,17 @@ The package currently consists of two function families, **data acquisition** an
 
 The package data acquisition functions begin with `get_urls_` for acquiring data store log information, `get_codes_` for acquiring code books and `get_data_` for downloading and reading data.
 
-The data tidying functions begin with `get_mentioned_` and they apply to a number of the features in the **gkg** data store that will get described in further detail farther below.
+The data tidying functions begin with `parse_` and they apply to a number of the features in the **gkg** and **vgkg** data stores that will get described in further detail farther below.
 
 #### <strong>CAUTION</strong>
 
 -   `gdeltr2` requires an internet connection for any data retrieval function
 -   The package's `get_gkg_data` and `get_gdelt_event_` functions are extremely bandwidth intensive given the download sizes of these data stores.
--   The package is very memory intensive given the unzipped size of the `GDELT Event` and `Global Knowledge Graph` files.
+-   The package is very memory intensive given the unzipped size of the `GDELT Event`, `Global Knowledge Graph` and `Visual Knowledge Graph` files.
 
 #### <strong>Primary Functions</strong>
 
--   <strong>Free Text API</strong>
+-   <strong>Full Text API</strong>
     -   `get_data_ft_api_domains()` - retrieves descriptive data from specified domains over the last 24 hours
     -   `get_data_ft_api_terms()` - retrieves descriptive data for specified terms over the last 24 hours
     -   `get_data_wordcloud_ft_api_domains()` - retrieves wordcloud data for specified domains over the last 24 hours
@@ -83,18 +84,34 @@ The data tidying functions begin with `get_mentioned_` and they apply to a numbe
     -   Each day contains a count file and the full gkg output.
     -   `get_data_gkg_day_summary()` retrieves GKG daily summary data for specified date(s), this captures *count files* by `is_count_file = T`
     -   `get_data_gkg_days_detailed()` - retrieves GKG data from the data cached every 15 minutes for specified date(s) for a given table. The table can be one of `c('gkg', 'export', 'mentions')`. This function may require significant bandwidth and memory given the potential file sizes.
+-   <strong>Visual Global Knowledge Graph</strong>
+    -   `get_urls_vgkg()` - retrieves VGKG log urls
+    -   `get_data_vgkg_dates()` - retrieves VGKG data from the data cached every 15 minutes for specified date(s)
 
 #### <strong>Tidying Functions</strong>
 
 Many of the columns in the GKG output are concatenated and require further parsing for proper analysis. These function tidy those concatenated columns, note given file sizes the functions may be time consuming.
 
--   `get_gkg_mentioned_names()` - parses mentioned names
--   `get_gkg_mentioned_people()` - parses mentioned people
--   `get_gkg_mentioned_organizations()` - parses mentioned organizations
--   `get_gkg_mentioned_numerics()` - parses mentioned numeric figures
--   `get_gkg_mentioned_themes()` - parses mentioned themes, ties to CAMEO Theme Codes
--   `get_gkg_mentioned_gcams()` - parses resolved GCAMs ties GCAM code book.
--   `get_gkg_mentioned_dates()` - parses mentioned dates according to the GKG scheme
+#### Global Knowledge Graph
+
+-   `parse_gkg_mentioned_names()` - parses mentioned names
+-   `parse_gkg_mentioned_people()` - parses mentioned people
+-   `parse_gkg_mentioned_organizations()` - parses mentioned organizations
+-   `parse_gkg_mentioned_numerics()` - parses mentioned numeric figures
+-   `parse_gkg_mentioned_themes()` - parses mentioned themes, ties to CAMEO Theme Codes
+-   `parse_gkg_mentioned_gcams()` - parses resolved GCAMs ties GCAM code book.
+-   `parse_gkg_mentioned_dates()` - parses mentioned dates according to the GKG scheme
+-   `parse_xml_extras()` - parses XML metadata from GKG table
+
+##### Visual Global Knowledge Graph
+
+-   `parse_vgkg_labels()` - parses and labels learned items
+-   `parse_vgkg_landmarks()` - parses and geocodes learned landmarks
+-   `parse_vgkg_logos()` - parses learned logos
+-   `parse_vgkg_safe_search()` - parses safe search likelihoods
+-   `parse_vgkg_faces()` - parses learned faces
+-   `parse_vgkg_ocr()` - parses OCR'd items
+-   `parse_vgkg_languages()` - parses languages
 
 #### <strong>Code Books</strong>
 
@@ -114,8 +131,8 @@ All these the GDELT and GKG datasets contain a whole host of codes that need res
 -   Vignettes
 -   Generic data visualization functions
 -   Generic machine learning and data analysis functions
--   Integration with Google Big Query
--   Potential integration with 3rd party full database mirror
+-   [`bigrquery`](https://github.com/rstats-db/bigrquery) integration
+-   Third party database mirror
 
 <strong>EXAMPLES</strong>
 -------------------------
@@ -125,11 +142,11 @@ library(gdeltr2)
 load_needed_packages(c('dplyr', 'magrittr'))
 ```
 
-### Free Text API
+### Full Text API
 
 ``` r
 test_terms <-
-  c('"Brooklyn Nets"', 'Manhattan Condominium', '"Eddie Huang"', '"EB5"')
+  c('"Brooklyn Nets"', 'Manhattan Condominium', '"Hassan Whiteside"', '"EB5"', '"Toy Poodle"')
 
 term_data <- 
   get_data_ft_api_terms(terms = test_terms, max_rows = 10000, only_english = T, domain = NA)
@@ -156,15 +173,14 @@ domain_sentiment <-
 ### GDELT Event Data
 
 ``` r
-events_1983_1989 <- 
+events_1989 <- 
   get_data_gdelt_periods_event(
-  periods = c(1983, 1989),
-  file_directory = 'Desktop/gdelt_temp',
-  is_count_file = F,
-  remove_files = T,
-  empty_trash = T,
-  return_message = T
-)
+    periods = 1989,
+    file_directory = 'Desktop/gkg_temp',
+    remove_files = T,
+    empty_trash = T,
+    return_message = T
+    )
 ```
 
 ### GKG Data
@@ -179,11 +195,6 @@ gkg_summary_count_may_15_16_2014 <-
   empty_trash = T,
   return_message = T
 )
-
-sources_example <- 
-  gkg_summary_count_may_15_16_2014 %>% 
-  slice(1:1000) %>% 
-  get_mentioned_gkg_source_data(source_column = 'sources')
 
 gkg_full_june_2_2016 <-
   get_data_gkg_days_detailed(
@@ -204,4 +215,102 @@ gkg_mentions_may_12_2016 <-
   empty_trash = T,
   return_message = T
   )
+```
+
+#### GKG Tidying
+
+``` r
+load_needed_packages(c('magrittr'))
+
+gkg_test <- 
+  get_data_gkg_days_detailed(only_most_recent = T, table_name = 'gkg')
+
+gkg_sample_df <- 
+  gkg_test %>% 
+  sample_n(1000)
+
+xml_extra_df <- 
+  gkg_sample_df %>% 
+  parse_gkg_xml_extras(filter_na = T, return_wide = F)
+
+article_tone <- 
+  gkg_sample_df %>% 
+  parse_gkg_mentioned_article_tone(filter_na = T, return_wide = T)
+
+gkg_dates <- 
+  gkg_sample_df %>% 
+  parse_gkg_mentioned_dates(filter_na = T, return_wide = T)
+
+gkg_gcams <- 
+  gkg_sample_df %>% 
+  parse_gkg_mentioned_gcams(filter_na = T, return_wide = T)
+
+gkg_event_counts <- 
+  gkg_sample_df %>% 
+  parse_gkg_mentioned_event_counts(filter_na = T, return_wide = T)
+
+gkg_locations <- 
+  gkg_sample_df %>% 
+  parse_gkg_mentioned_locations(filter_na = T, return_wide = T)
+
+gkg_names <- 
+  gkg_sample_df %>% 
+  parse_gkg_mentioned_names(filter_na = T, return_wide = T)
+
+gkg_themes <- 
+  gkg_sample_df %>% 
+  parse_gkg_mentioned_themes(theme_column = 'charLoc',
+                                      filter_na = T, return_wide = T)
+
+gkg_numerics <- 
+  gkg_sample_df %>% 
+  parse_gkg_mentioned_numerics(filter_na = T, return_wide = T)
+
+gkg_orgs <-
+  gkg_sample_df %>% 
+  parse_gkg_mentioned_organizations(organization_column = 'charLoc', 
+                                             filter_na = T, return_wide = T)
+
+gkg_quotes <-
+  gkg_sample_df %>% 
+  parse_gkg_mentioned_quotes(filter_na = T, return_wide = T)
+
+gkg_people <- 
+  gkg_sample_df %>% 
+  parse_gkg_mentioned_people(people_column = 'charLoc', filter_na = T, return_wide = T)
+```
+
+#### VGKG Tidying
+
+``` r
+vgkg_test <- 
+  get_data_vgkg_dates(only_most_recent = T)
+
+vgkg_sample <- 
+  vgkg_test %>% 
+  sample_n(1000)
+
+vgkg_labels <- 
+  vgkg_sample %>% 
+  parse_vgkg_labels()
+
+faces_test <- 
+  vgkg_sample %>% 
+  parse_vgkg_faces()
+
+landmarks_test <- 
+  vgkg_sample %>% 
+  parse_vgkg_landmarks()
+
+logos_test <- 
+  vgkg_sample %>% 
+  parse_vgkg_logos()
+
+ocr_test <- 
+  vgkg_sample %>% 
+  parse_vgkg_ocr()
+
+search_test <- 
+  vgkg_sample %>% 
+  parse_vgkg_safe_search()
 ```

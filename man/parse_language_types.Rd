@@ -4,10 +4,10 @@
 \alias{parse_language_types}
 \title{Parses XML Language Type}
 \usage{
-parse_language_types(data, id_date_time = 1)
+parse_language_types(data, id_vgkg = 1)
 }
 \arguments{
-\item{id_date_time}{}
+\item{id_vgkg}{}
 }
 \value{
 

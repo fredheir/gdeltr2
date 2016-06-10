@@ -4,10 +4,10 @@
 \alias{parse_xml_ocr}
 \title{Parses XML OCR}
 \usage{
-parse_xml_ocr(data, id_date_time = 1)
+parse_xml_ocr(data, id_vgkg = 1)
 }
 \arguments{
-\item{id_date_time}{}
+\item{id_vgkg}{}
 }
 \value{
 

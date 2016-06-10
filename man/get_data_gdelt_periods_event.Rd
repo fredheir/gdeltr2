@@ -4,7 +4,7 @@
 \alias{get_data_gdelt_periods_event}
 \title{Returns GDELT event data for a given periods}
 \usage{
-get_data_gdelt_periods_event(periods = c(1983, 1984),
+get_data_gdelt_periods_event(periods = c(1983, 1989),
   file_directory = "Desktop/temp_gdelt_data", remove_files = T,
   empty_trash = T, return_message = T)
 }
