@@ -791,8 +791,8 @@ get_schema_gkg_general <- function() {
       ),
       nameActual = c(
         "idGKG",
-        "dateURL",
-        "isSourceCollectionIdentifier",
+        "dateDocument",
+        "idSourceCollectionIdentifier",
         "nameSource",
         "documentSource",
         "counts",
@@ -1090,10 +1090,10 @@ get_gdelt_url_data <-
 
       gdelt_data <-
         gdelt_data %>%
-        dplyr::rename(dateTimeURL = dateTimeDataAdded) %>%
+        dplyr::rename(dateTimeDocument = dateTimeDataAdded) %>%
         dplyr::mutate(
           dateEvent = dateEvent %>% lubridate::ymd,
-          dateTimeURL = dateTimeURL %>% ymd_hms() %>% with_tz(Sys.timezone()),
+          dateTimeDocument = dateTimeDocument %>% ymd_hms() %>% with_tz(Sys.timezone()),
           nameSource = urlSource %>% domain() %>% str_replace_all("www.", '')
         )
 
@@ -1185,9 +1185,9 @@ get_gdelt_url_data <-
 
       gdelt_data <-
         gdelt_data %>%
-        dplyr::rename(dateURL = dateAdded) %>%
+        dplyr::rename(dateDocument = dateAdded) %>%
         dplyr::mutate(dateEvent = dateEvent %>% lubridate::ymd,
-                      dateURL = dateURL %>% lubridate::ymd) %>%
+                      dateDocument = dateDocument %>% lubridate::ymd) %>%
         suppressWarnings()
 
       gdelt_data <-
@@ -1279,11 +1279,11 @@ get_gdelt_url_data <-
 
       gdelt_data <-
         gdelt_data %>%
-        dplyr::rename(dateTimeURL = dateAdded) %>%
+        dplyr::rename(dateTimeDocument = dateAdded) %>%
         dplyr::mutate(
           dateEvent = dateEvent %>% lubridate::ymd,
-          dateTimeURL %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone()),
-          dateURL = dateTimeURL %>% as.Date(),
+          dateTimeDocument %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone()),
+          dateDocument = dateTimeDocument %>% as.Date(),
           nameSource = urlSource %>% domain() %>% str_replace_all("www.", '')
         ) %>%
         suppressWarnings()
@@ -1350,22 +1350,22 @@ get_gdelt_url_data <-
       gdelt_data <-
         gdelt_data %>%
         dplyr::mutate(
-          isSourceCollectionIdentifier = isSourceCollectionIdentifier %>% as.numeric(),
+          idSourceCollectionIdentifier = idSourceCollectionIdentifier %>% as.numeric(),
           isDocumentURL = ifelse(documentSource %>% str_detect('http'), T, F)
         ) %>%
-        dplyr::select(idGKG:isSourceCollectionIdentifier,
+        dplyr::select(idGKG:idSourceCollectionIdentifier,
                       isDocumentURL,
                       everything()) %>%
-        dplyr::rename(dateTimeURL = dateURL) %>%
-        dplyr::mutate(dateTimeURL = dateTimeURL %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone())) %>%
+        dplyr::rename(dateTimeDocument = dateDocument) %>%
+        dplyr::mutate(dateTimeDocument = dateTimeDocument %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone())) %>%
         separate(
           idGKG,
-          into = c('dateTime', 'iddateTimeArticle'),
+          into = c('dateTime', 'idDateTimeArticle'),
           sep = '\\-',
           remove = F
         ) %>%
         dplyr::select(-dateTime) %>%
-        dplyr::mutate(iddateTimeArticle = iddateTimeArticle %>% as.numeric) %>%
+        dplyr::mutate(idDateTimeArticle = idDateTimeArticle %>% as.numeric) %>%
         suppressMessages() %>%
         suppressWarnings()
 
@@ -3746,7 +3746,7 @@ get_data_gkg_days_detailed <- function(dates = c("2016-06-01"),
   if ('idDateTime' %in% names(all_data)) {
     all_data <-
       all_data %>%
-      dplyr::rename(idDateTime = iddateTimeArticle) %>%
+      dplyr::rename(idDateTime = idDateTimeArticle) %>%
       dplyr::mutate(idDateTime = 1:n()) %>%
       separate(idGKG, sep = '\\-', c('dateCode', 'remove')) %>%
       unite(idGKG,
@@ -4037,7 +4037,7 @@ get_vgkg_schema  <- function() {
       ),
       nameActual =
         c(
-          "dateTimeURL",
+          "dateTimeDocument",
           "documentSource",
           "urlImage",
           "xmlLabels",
@@ -4203,11 +4203,11 @@ get_data_vgkg_url <-
     cloud_vision_data <-
       cloud_vision_data %>%
       dplyr::mutate(
-        dateCodeURL = dateTimeURL,
+        dateCodeURL = dateTimeDocument,
         idDateTime = 1:n(),
-        idVGKG = dateTimeURL %>% paste0('-', idDateTime),
-        dateTimeURL = dateTimeURL %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone()),
-        dateURL = dateTimeURL %>% as.Date,
+        idVGKG = dateTimeDocument %>% paste0('-', idDateTime),
+        dateTimeDocument = dateTimeDocument %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone()),
+        dateDocument = dateTimeDocument %>% as.Date,
         dimWidthHeight = dimWidthHeight %>% tidyr::extract_numeric
       ) %>%
       dplyr::select(idVGKG, idDateTime, everything())
@@ -4310,7 +4310,7 @@ get_data_vgkg_day <-
       purrr::compact %>%
       bind_rows %>%
       distinct %>%
-      dplyr::select(idVGKG, idDateTime, dateTimeURL, everything()) %>%
+      dplyr::select(idVGKG, idDateTime, dateTimeDocument, everything()) %>%
       suppressWarnings()
 
     if (return_message == T) {
@@ -4372,7 +4372,7 @@ get_data_vgkg_dates <-
     all_data <-
       all_data %>%
       separate(idVGKG, into = c('VGKG', 'remove'), '\\-') %>%
-      group_by(dateURL) %>%
+      group_by(dateDocument) %>%
       mutate(count = 1:n()) %>%
       mutate(idVGKG = VGKG %>% paste0('-', count)) %>%
       dplyr::select(-c(count, idDateTime, remove, VGKG)) %>%
@@ -4396,7 +4396,7 @@ get_data_vgkg_dates <-
 #'
 #' @examples
 parse_xml_extras <-
-  function(data, id_gkg = 22) {
+  function(data, id_gkg = "20160601010000-BLOOMBERG_20160601_010000_Trending_Business") {
     xmlData <-
       data %>%
       dplyr::filter(idGKG == id_gkg) %>%
@@ -4428,11 +4428,10 @@ parse_xml_extras <-
         xml_df <-
           data_frame(idGKG = id_gkg,
                      item = items,
-                     value = values) %>%
-          mutate(countSem = str_count('\\;'))
+                     value = values)
 
         splitCt <-
-          xml_df$countSem %>% max
+          xmlData %>% str_count('\\;')
 
         names_vals <-
           seq_len(splitCt) %>% paste0('v', .)
@@ -4440,7 +4439,6 @@ parse_xml_extras <-
         xml_df <-
           xml_df %>%
           separate(value, into = names_vals, sep = '\\;') %>%
-          dplyr::select(-countSem) %>%
           gather(val, value, -c(item, idGKG), na.rm = T) %>%
           dplyr::select(-val) %>%
           group_by(item) %>%
@@ -4457,6 +4455,30 @@ parse_xml_extras <-
           )) %>%
           dplyr::filter(!value %>% is.na()) %>%
           suppressWarnings()
+
+        if (xml_df$value[1] %>% str_detect(":")) {
+          xml_df <-
+            xml_df %>%
+            separate(value, into = c('charLoc', 'timeLoc'), '\\:') %>%
+            mutate(charLoc = charLoc %>% as.numeric,
+                   timeLoc = timeLoc %>% as.numeric) %>%
+            dplyr::select(-item) %>%
+            gather(item, value, -c(idGKG), na.rm = T) %>%
+            group_by(item) %>%
+            mutate(idXMLItem = 1:n() - 1) %>%
+            dplyr::select(idGKG, idXMLItem, item, value) %>%
+            ungroup %>%
+            arrange(item) %>%
+            mutate(item = ifelse(idXMLItem == 0, item, item %>% paste0(idXMLItem))) %>%
+            dplyr::select(-idXMLItem) %>%
+            mutate(value = ifelse(
+              value %in% c('', '\\*', '(required)', "\\'", "*", "'", "→", "{", "-"),
+              NA,
+              value
+            )) %>%
+            dplyr::filter(!value %>% is.na()) %>%
+            suppressWarnings()
+        }
 
 
       }
@@ -5273,6 +5295,434 @@ parse_vgkg_languages <- function(gdelt_data,
   all_data <-
     all_data %>%
     get_clean_count_vkg_data(count_col = 'idItemLanguage', return_wide = return_wide)
+
+  return(all_data)
+}
+
+
+#' Gets most recent GKG TV log URLs
+#'
+#' @return
+#' @import stringr
+#' @import dplyr
+#' @importFrom magrittr %>%
+#' @importFrom readr read_tsv
+#' @importFrom tidyr separate
+#' @export
+#'
+#' @examples get_urls_gkg_most_recent_log()
+get_urls_gkgtv_most_recent_log <- function() {
+  urlData <-
+    'http://data.gdeltproject.org/gdeltv2_iatelevision/lastupdate.txt' %>%
+    readr::read_tsv(col_names = F) %>%
+    dplyr::select(-1)
+
+  names(urlData) <-
+    c('idHash', 'urlData')
+
+  urlData <-
+    urlData %>%
+    mutate(
+      dateData = urlData %>% str_replace_all(
+        'http://data.gdeltproject.org/gdeltv2_iatelevision/|.gkg.csv.gz',
+        ''
+      ) %>% as.Date('%Y%m%d')
+    ) %>%
+    dplyr::select(dateData, everything())
+
+  return(urlData)
+}
+
+#' Retrieves GKG TV Schema
+#'
+#' @return
+#' @importFrom dplyr data_frame
+#' @examples
+#' get_tv_schema
+
+get_tv_schema  <- function() {
+  tv_schema <-
+    data_frame(
+      nameGDELT = c(
+        "GKGRECORDID",
+        "DATE",
+        "SourceCollectionIdentifier",
+        "SourceCommonName",
+        "DocumentIdentifier",
+        "Counts",
+        "V2Counts",
+        "Themes",
+        "V2Themes",
+        "Locations",
+        "V2Locations",
+        "Persons",
+        "V2Persons",
+        "Organizations",
+        "V2Organizations",
+        "V2Tone",
+        "Dates",
+        "GCAM",
+        "SharingImage",
+        "RelatedImages",
+        "SocialImageEmbeds",
+        "SocialVideoEmbeds",
+        "Quotations",
+        "AllNames",
+        "Amounts",
+        "TranslationInfo",
+        "Extras"
+      ),
+      nameActual = c(
+        "idGKG",
+        "dateDocument",
+        "idSourceCollectionIdentifier",
+        "nameSource",
+        "documentSource",
+        "counts",
+        "countsCharLoc",
+        "themes",
+        "themesCharLoc",
+        "locations",
+        "locationsCharLoc",
+        "persons",
+        "personsCharLoc",
+        "organizations",
+        "organizationsCharLoc",
+        "tone",
+        "dates",
+        "gcam",
+        "urlImage",
+        "urlImageRelated",
+        "urlSocialMediaImageEmbeds",
+        "urlSocialMediaVideoEmbeds",
+        "quotations",
+        "mentionedNamesCounts",
+        "mentionedNumericsCounts",
+        "translationInfo",
+        "xmlExtras"
+      )
+    )
+  return(tv_schema)
+
+}
+#' Gets Global Knowledge Graph TV Summary Files
+#'
+#' @param remove_count_files
+#' @param return_message
+#'
+#' @return
+#' @export
+#' @import stringr
+#' @import dplyr
+#' @importFrom magrittr %>%
+#' @importFrom readr read_tsv
+#' @importFrom lubridate ymd
+#' @importFrom tidyr separate
+#' @examples
+#' get_urls_gkg_daily_summaries(remove_count_files = T)
+get_urls_gkg_tv_daily_summaries <-
+  function(return_message = T) {
+    url <-
+      'http://data.gdeltproject.org/gdeltv2_iatelevision/masterfilelist.txt'
+
+    urlData <-
+      url %>%
+      readr::read_tsv(col_names = F) %>%
+      dplyr::select(-1)
+
+    names(urlData) <-
+      c('idHash', 'urlData')
+
+    urlData <-
+      urlData %>%
+      mutate(
+        dateData = urlData %>% str_replace_all(
+          'http://data.gdeltproject.org/gdeltv2_iatelevision/|.gkg.csv.gz',
+          ''
+        ) %>% as.Date('%Y%m%d')
+      ) %>%
+      dplyr::select(dateData, everything())
+
+    if (return_message == T) {
+      count.files <-
+        urlData %>%
+        nrow
+
+      min.date <-
+        urlData$dateData %>% min(na.rm = T)
+
+      max.date <-
+        urlData$dateData %>% max(na.rm = T)
+
+      "You got " %>%
+        paste0(count.files,
+               ' GDELT TV Global Knowledge Graph URLS from ',
+               min.date,
+               ' to ',
+               max.date) %>%
+        message()
+    }
+
+    return(urlData)
+  }
+
+
+#' Gets TV data from a URL
+#'
+#' @param url
+#' @param file_directory
+#' @param remove_files
+#' @param empty_trash
+#' @param return_message
+#' @export
+#' @return
+#' @importFrom httr url_ok
+#' @import stringr
+#' @importFrom purrr flatten_chr
+#' @importFrom curl curl_download
+#' @importFrom readr read_tsv
+#' @importFrom lubridate ymd_hms
+#' @importFrom lubridate with_tz
+#' @examples
+get_data_gkg_tv <-
+  function(url = 'http://data.gdeltproject.org/gdeltv2_iatelevision/20160609.gkg.csv.gz',
+           file_directory = 'Desktop/temp_gdelt_data',
+           remove_files = T,
+           empty_trash = T,
+           return_message = T) {
+    ok_url <-
+      url %>% httr::url_ok %>% suppressWarnings()
+    if (ok_url == FALSE) {
+      stop("Invalid url")
+    }
+
+    files <-
+      url %>%
+      str_replace_all(
+        'http://data.gdeltproject.org/gdeltv2_iatelevision/|http://data.gdeltproject.org/gdeltv2/|http://data.gdeltproject.org/gkg/|http://data.gdeltproject.org/events/|http://data.gdeltproject.org/gdeltv2_cloudvision/',
+        ''
+      ) %>%
+      str_split('\\.') %>%
+      flatten_chr
+
+    file_name <-
+      files %>%
+      paste0(collapse = '.')
+
+    temp.dir <-
+      file_directory
+
+    file_path <-
+      temp.dir %>% str_split('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
+
+    if (dir.exists(paths = file_path)) {
+      "rm -R " %>%
+        paste0(temp.dir) %>%
+        system()
+      if (empty_trash == T) {
+        system('rm -rf ~/.Trash/*')
+      }
+    }
+
+    if (!dir.exists(paths = file_path)) {
+      dir.create(temp.dir)
+    }
+
+    file <-
+      temp.dir %>%
+      paste0('/', file_name)
+
+    url %>%
+      curl_download(url = ., destfile = file)
+
+    dir_files <-
+      temp.dir %>%
+      list.files()
+
+    csv_file_loc <-
+      dir_files[dir_files %>%
+                  str_detect(".csv|.CSV")] %>%
+      paste0(temp.dir, '/', .)
+
+    gkg_tv_data <-
+      csv_file_loc %>%
+      gzfile() %>%
+      read_tsv(col_names = F) %>%
+      suppressWarnings()
+
+    names(gkg_tv_data) <-
+      get_tv_schema() %>% .$nameActual
+
+    gkg_tv_data <-
+      gkg_tv_data %>%
+      dplyr::mutate(
+        idSourceCollectionIdentifier = idSourceCollectionIdentifier %>% as.numeric(),
+        isDocumentURL = ifelse(documentSource %>% str_detect('http'), T, F)
+      ) %>%
+      dplyr::select(idGKG:idSourceCollectionIdentifier,
+                    isDocumentURL,
+                    everything()) %>%
+      dplyr::rename(dateTimeDocument = dateDocument) %>%
+      dplyr::mutate(dateTimeDocument = dateTimeDocument %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone())) %>%
+      suppressMessages() %>%
+      suppressWarnings()
+
+    gkg_tv_data <-
+      gkg_tv_data %>%
+      mutate(docDetails = documentSource %>% sub('\\_', '\\-',.) %>% sub('\\_', '\\-',.)  %>% sub('\\_', '\\-',.)) %>%
+      separate(docDetails, sep = '\\-', into = c('idTVNetwork', 'date', 'time', 'nameTVShow')) %>%
+      dplyr::select(-c(date, time)) %>%
+      mutate(nameTVShow = nameTVShow %>% str_replace_all('\\_', ' '),
+             urlArchiveVideo = documentSource %>% paste0('https://archive.org/details/',.)) %>%
+      dplyr::select(idGKG:documentSource,urlArchiveVideo, idTVNetwork,nameTVShow, everything())
+
+    if (remove_files == T) {
+      "rm -R " %>%
+        paste0(temp.dir) %>%
+        system()
+      if (empty_trash == T) {
+        system('rm -rf ~/.Trash/*')
+      }
+    }
+
+    if (return_message) {
+      "Downloaded, parsed and imported " %>%
+        paste0(url) %>%
+        message()
+
+    }
+    return(gkg_tv_data)
+  }
+
+#' Retrieves detailed GKG data for a given day from a specified table
+#'
+#' @param date_data must be a date in Year - Month - Day format
+#' @param table_name options \code{c('gkg', 'export', 'mentions'))}
+#' @param file_directory
+#' @param empty_trash
+#' @param return_message
+#' @return
+#'
+#' @examples
+
+get_data_gkg_tv_day <- function(date_data = "2016-06-01",
+                                file_directory = 'Desktop/temp_gdelt_data',
+                                only_most_recent = F,
+                                remove_files = T,
+                                empty_trash = T,
+                                return_message = T) {
+  if (only_most_recent == T) {
+    date_data <-
+      Sys.Date()
+  }
+
+  if (!date_data %>% substr(5, 5) == "-") {
+    stop("Sorry data must be in YMD format, ie, 2016-06-01")
+  }
+
+  date_data <-
+    date_data %>%
+    ymd %>% as.Date()
+
+
+  if (date_data < "2009-06-04") {
+    stop("Sorry data starts on June 4th, 2009")
+  }
+
+  if (date_data > Sys.Date() - 2) {
+    stop("Sorry data can't go into the future is on a 2 day lag")
+  }
+
+  if (only_most_recent == T) {
+    gkg_recent <-
+      get_urls_gkgtv_most_recent_log()
+    urls <-
+      gkg_recent %>%
+      .$urlData
+  } else {
+    if (!'gkg_tv_urls' %>% exists) {
+      paste(
+        "To save memory and time next time you should run the function get_urls_gkg_tv_daily_summaries and save to data frame called gkg_tv_urls"
+      ) %>%
+        message
+      gkg_tv_urls <-
+        get_urls_gkg_tv_daily_summaries()
+    }
+
+    urls <-
+      gkg_tv_urls %>%
+      dplyr::filter(dateData == date_data) %>%
+      .$urlData
+  }
+
+  get_data_gkg_tv_safe <-
+    failwith(NULL, get_data_gkg_tv)
+
+  all_data <-
+    urls %>%
+    purrr::map(function(x) {
+      get_data_gkg_tv(
+        url = x,
+        remove_files = remove_files,
+        file_directory = file_directory,
+        return_message = return_message,
+        empty_trash = empty_trash
+      )
+    }) %>%
+    purrr::compact %>%
+    bind_rows %>%
+    distinct %>%
+    suppressMessages() %>%
+    suppressWarnings()
+
+  if (return_message == T) {
+    "You retrieved " %>%
+      paste0(all_data %>% nrow, " gkg tv events for ", date_data) %>%
+      message()
+  }
+
+  return(all_data)
+}
+
+
+#' Get dates detailed data from a GKG TV tables
+#'
+#' @param dates
+#' @param table_name
+#' @param file_directory
+#' @param remove_files
+#' @param empty_trash
+#' @param return_message
+#' @importFrom purrr map
+#' @return
+#' @export
+#'
+#' @examples
+get_data_gkg_tv_days <- function(dates = c("2016-06-01", "2016-02-01"),
+                                       file_directory = 'Desktop/temp_gdelt_data',
+                                       only_most_recent = F,
+                                       remove_files = T,
+                                       empty_trash = T,
+                                       return_message = T) {
+  get_data_gkg_tv_day_safe <-
+    failwith(NULL, get_data_gkg_tv_day)
+
+  all_data <-
+    dates %>%
+    purrr::map(
+      function(x)
+        get_data_gkg_tv_day_safe(
+          date_data = x,
+          only_most_recent = only_most_recent,
+          file_directory = file_directory,
+          remove_files = remove_files,
+          empty_trash = empty_trash,
+          return_message = return_message
+        )
+    ) %>%
+    purrr::compact %>%
+    bind_rows %>%
+    suppressWarnings()
 
   return(all_data)
 }

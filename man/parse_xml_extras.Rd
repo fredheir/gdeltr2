@@ -4,7 +4,8 @@
 \alias{parse_xml_extras}
 \title{Parse XML Labels}
 \usage{
-parse_xml_extras(data, id_gkg = 22)
+parse_xml_extras(data,
+  id_gkg = "20160601010000-BLOOMBERG_20160601_010000_Trending_Business")
 }
 \arguments{
 \item{id_dateTime}{}
