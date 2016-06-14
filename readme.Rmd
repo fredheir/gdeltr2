@@ -82,7 +82,7 @@ The data tidying functions begin with `parse_` and they apply to a number of the
 
 * <strong>GDELT Events</strong>
 	*   `get_urls_gdelt_event_log()` - retrieves descriptive data and urls for all available GDELT event downloads.
-	*   `get_data_gdelt_period_event_totals`  - retrieves summary event data for a given a period [monthly, daily, yearly]; this can be grouped by country.
+	*   `get_data_gdelt_period_event_totals()`  - retrieves summary event data for a given a period [monthly, daily, yearly]; this can be grouped by country.
 	*   `get_data_gdelt_periods_event()`  - retrieves GDELT event data for a specified periods.  Periods are by 4 digit years from 1979 to 2005, 6 digit year month from January 2006 to March 2013, and 8 digit year month day code thereafter.
 
 * <strong>Global Knowledge Graph</strong>
