@@ -73,7 +73,7 @@ The data tidying functions begin with `parse_` and they apply to a number of the
     -   `get_data_sentiment_ft_api_terms()` - retrieves sentiment data for specified terms over the last 24 hours
 -   <strong>GDELT Events</strong>
     -   `get_urls_gdelt_event_log()` - retrieves descriptive data and urls for all available GDELT event downloads.
-    -   `get_data_gdelt_period_event_totals` - retrieves summary event data for a given a period \[monthly, daily, yearly\]; this can be grouped by country.
+    -   `get_data_gdelt_period_event_totals()` - retrieves summary event data for a given a period \[monthly, daily, yearly\]; this can be grouped by country.
     -   `get_data_gdelt_periods_event()` - retrieves GDELT event data for a specified periods. Periods are by 4 digit years from 1979 to 2005, 6 digit year month from January 2006 to March 2013, and 8 digit year month day code thereafter.
 -   <strong>Global Knowledge Graph</strong>
     -   `get_urls_gkg_15_minute_log` - retrieves GKG 15 minute capture logs; data begins February 18th, 2015 for the three table types
@@ -146,7 +146,7 @@ load_needed_packages(c('dplyr', 'magrittr'))
 
 ``` r
 test_terms <-
-  c('"Brooklyn Nets"', 'Manhattan Condominium', '"Hassan Whiteside"', '"EB5"', '"Toy Poodle"')
+  c('"Brooklyn Nets"', 'El Chapo', '"Hassan Whiteside"', '"EB5"', '"Toy Poodle"')
 
 term_data <- 
   get_data_ft_api_terms(terms = test_terms, max_rows = 10000, only_english = T, domain = NA)
@@ -186,7 +186,7 @@ events_1989 <-
 ### GKG Data
 
 ``` r
-gkg_summary_count_may_15_16_2014 <-  
+gkg_summary_count_may_15_16_2014 <-
   get_data_gkg_days_summary(
   dates = c('2014-05-15', '2014-05-16'),
   is_count_file = T,
@@ -194,7 +194,7 @@ gkg_summary_count_may_15_16_2014 <-
   remove_files = T,
   empty_trash = T,
   return_message = T
-)
+  )
 
 gkg_full_june_2_2016 <-
   get_data_gkg_days_detailed(
@@ -205,8 +205,8 @@ gkg_full_june_2_2016 <-
   empty_trash = T,
   return_message = T
   )
-
-gkg_mentions_may_12_2016 <-
+  
+  gkg_mentions_may_12_2016 <-
   get_data_gkg_days_detailed(
   dates = c("2016-05-12"),
   table_name = 'mentions',
@@ -215,6 +215,13 @@ gkg_mentions_may_12_2016 <-
   empty_trash = T,
   return_message = T
   )
+```
+
+#### GKG Television Data
+
+``` r
+gkg_tv_test <- 
+  get_data_gkg_tv_days(dates = c("2016-06-17", "2016-06-16"))
 ```
 
 #### GKG Tidying
@@ -292,25 +299,25 @@ vgkg_sample <-
 
 vgkg_labels <- 
   vgkg_sample %>% 
-  parse_vgkg_labels()
+  parse_vgkg_labels(return_wide = T)
 
 faces_test <- 
   vgkg_sample %>% 
-  parse_vgkg_faces()
+  parse_vgkg_faces(return_wide = T)
 
 landmarks_test <- 
   vgkg_sample %>% 
-  parse_vgkg_landmarks()
+  parse_vgkg_landmarks(return_wide = F)
 
 logos_test <- 
   vgkg_sample %>% 
-  parse_vgkg_logos()
+  parse_vgkg_logos(return_wide = T)
 
 ocr_test <- 
   vgkg_sample %>% 
-  parse_vgkg_ocr()
+  parse_vgkg_ocr(return_wide = F)
 
 search_test <- 
   vgkg_sample %>% 
-  parse_vgkg_safe_search()
+  parse_vgkg_safe_search(return_wide = F)
 ```

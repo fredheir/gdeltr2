@@ -947,9 +947,8 @@ get_schema_gkg_mentions <- function() {
 #' @import dplyr
 #' @import utils
 #' @importFrom urltools domain
-#' @importFrom curl curl_download
+#' @importFrom curl curl_download curl
 #' @return
-#' @export
 #'
 #' @examples
 #' get_gdelt_url_data(url = "http://data.gdeltproject.org/gdeltv2/20160531000000.gkg.csv.zip", file_directory = 'Desktop/temp_gdelt_data', remove_files = T, empty_trash = T, return_message = T)
@@ -4117,11 +4116,7 @@ get_urls_vgkg_most_recent  <- function() {
 #' Gets Cloud Vision Data File
 #'
 #' @param url
-#' @param file_directory
-#' @param remove_files
-#' @param empty_trash
 #' @param return_message
-#' @export
 #' @return
 #' @importFrom httr url_ok
 #' @import stringr
@@ -4133,9 +4128,6 @@ get_urls_vgkg_most_recent  <- function() {
 #' @examples
 get_data_vgkg_url <-
   function(url = 'http://data.gdeltproject.org/gdeltv2_cloudvision/20160606234500.imagetagsv1.csv.gz',
-           file_directory = 'Desktop/temp_gdelt_data',
-           remove_files = T,
-           empty_trash = T,
            return_message = T) {
     ok_url <-
       url %>% httr::url_ok %>% suppressWarnings()
@@ -4143,57 +4135,11 @@ get_data_vgkg_url <-
       stop("Invalid url")
     }
 
-    files <-
-      url %>%
-      str_replace_all(
-        'http://data.gdeltproject.org/gdeltv2/|http://data.gdeltproject.org/gkg/|http://data.gdeltproject.org/events/|http://data.gdeltproject.org/gdeltv2_cloudvision/',
-        ''
-      ) %>%
-      str_split('\\.') %>%
-      flatten_chr
-
-    file_name <-
-      files %>%
-      paste0(collapse = '.')
-
-    temp.dir <-
-      file_directory
-
-    file_path <-
-      temp.dir %>% str_split('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
-
-    if (dir.exists(paths = file_path)) {
-      "rm -R " %>%
-        paste0(temp.dir) %>%
-        system()
-      if (empty_trash == T) {
-        system('rm -rf ~/.Trash/*')
-      }
-    }
-
-    if (!dir.exists(paths = file_path)) {
-      dir.create(temp.dir)
-    }
-
-    file <-
-      temp.dir %>%
-      paste0('/', file_name)
-
-    url %>%
-      curl_download(url = ., destfile = file)
-
-    dir_files <-
-      temp.dir %>%
-      list.files()
-
-    csv_file_loc <-
-      dir_files[dir_files %>%
-                  str_detect(".csv|.CSV")] %>%
-      paste0(temp.dir, '/', .)
 
     cloud_vision_data <-
-      csv_file_loc %>%
-      gzfile() %>%
+      url %>%
+      curl::curl %>%
+      gzcon() %>%
       read_tsv(col_names = F) %>%
       suppressWarnings()
 
@@ -4212,14 +4158,6 @@ get_data_vgkg_url <-
       ) %>%
       dplyr::select(idVGKG, idDateTime, everything())
 
-    if (remove_files == T) {
-      "rm -R " %>%
-        paste0(temp.dir) %>%
-        system()
-      if (empty_trash == T) {
-        system('rm -rf ~/.Trash/*')
-      }
-    }
 
     if (return_message) {
       "Downloaded, parsed and imported " %>%
@@ -4246,9 +4184,6 @@ get_data_vgkg_day <-
   function(date_data = "2016-06-08",
            include_translations = F,
            only_most_recent = F,
-           file_directory = 'Desktop/temp_gdelt_data',
-           remove_files = T,
-           empty_trash = T,
            return_message = T) {
     if (!date_data %>% substr(5, 5) == "-") {
       stop("Sorry data must be in YMD format, ie, 2016-06-01")
@@ -4301,10 +4236,7 @@ get_data_vgkg_day <-
       purrr::map(function(x) {
         get_data_vgkg_url_safe(
           url = x,
-          remove_files = remove_files,
-          file_directory = file_directory,
-          return_message = return_message,
-          empty_trash = empty_trash
+          return_message = return_message
         )
       }) %>%
       purrr::compact %>%
@@ -4341,10 +4273,7 @@ get_data_vgkg_day <-
 get_data_vgkg_dates <-
   function(dates = c("2016-06-09", "2016-06-08"),
            include_translations = F,
-           file_directory = 'Desktop/temp_gdelt_data',
            only_most_recent = F,
-           remove_files = T,
-           empty_trash = T,
            return_message = T) {
     if (only_most_recent == T) {
       dates <-
@@ -4359,10 +4288,7 @@ get_data_vgkg_dates <-
         function(x)
           get_data_vgkg_day_safe(
             date_data = x,
-            file_directory = file_directory,
             only_most_recent = only_most_recent,
-            remove_files = remove_files,
-            empty_trash = empty_trash,
             return_message = return_message
           )
       ) %>%
@@ -5470,11 +5396,7 @@ get_urls_gkg_tv_daily_summaries <-
 #' Gets TV data from a URL
 #'
 #' @param url
-#' @param file_directory
-#' @param remove_files
-#' @param empty_trash
 #' @param return_message
-#' @export
 #' @return
 #' @importFrom httr url_ok
 #' @import stringr
@@ -5486,9 +5408,6 @@ get_urls_gkg_tv_daily_summaries <-
 #' @examples
 get_data_gkg_tv <-
   function(url = 'http://data.gdeltproject.org/gdeltv2_iatelevision/20160609.gkg.csv.gz',
-           file_directory = 'Desktop/temp_gdelt_data',
-           remove_files = T,
-           empty_trash = T,
            return_message = T) {
     ok_url <-
       url %>% httr::url_ok %>% suppressWarnings()
@@ -5496,57 +5415,10 @@ get_data_gkg_tv <-
       stop("Invalid url")
     }
 
-    files <-
-      url %>%
-      str_replace_all(
-        'http://data.gdeltproject.org/gdeltv2_iatelevision/|http://data.gdeltproject.org/gdeltv2/|http://data.gdeltproject.org/gkg/|http://data.gdeltproject.org/events/|http://data.gdeltproject.org/gdeltv2_cloudvision/',
-        ''
-      ) %>%
-      str_split('\\.') %>%
-      flatten_chr
-
-    file_name <-
-      files %>%
-      paste0(collapse = '.')
-
-    temp.dir <-
-      file_directory
-
-    file_path <-
-      temp.dir %>% str_split('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
-
-    if (dir.exists(paths = file_path)) {
-      "rm -R " %>%
-        paste0(temp.dir) %>%
-        system()
-      if (empty_trash == T) {
-        system('rm -rf ~/.Trash/*')
-      }
-    }
-
-    if (!dir.exists(paths = file_path)) {
-      dir.create(temp.dir)
-    }
-
-    file <-
-      temp.dir %>%
-      paste0('/', file_name)
-
-    url %>%
-      curl_download(url = ., destfile = file)
-
-    dir_files <-
-      temp.dir %>%
-      list.files()
-
-    csv_file_loc <-
-      dir_files[dir_files %>%
-                  str_detect(".csv|.CSV")] %>%
-      paste0(temp.dir, '/', .)
-
     gkg_tv_data <-
-      csv_file_loc %>%
-      gzfile() %>%
+      url %>%
+      curl::curl %>%
+      gzcon() %>%
       read_tsv(col_names = F) %>%
       suppressWarnings()
 
@@ -5576,15 +5448,6 @@ get_data_gkg_tv <-
              urlArchiveVideo = documentSource %>% paste0('https://archive.org/details/',.)) %>%
       dplyr::select(idGKG:documentSource,urlArchiveVideo, idTVNetwork,nameTVShow, everything())
 
-    if (remove_files == T) {
-      "rm -R " %>%
-        paste0(temp.dir) %>%
-        system()
-      if (empty_trash == T) {
-        system('rm -rf ~/.Trash/*')
-      }
-    }
-
     if (return_message) {
       "Downloaded, parsed and imported " %>%
         paste0(url) %>%
@@ -5606,10 +5469,7 @@ get_data_gkg_tv <-
 #' @examples
 
 get_data_gkg_tv_day <- function(date_data = "2016-06-01",
-                                file_directory = 'Desktop/temp_gdelt_data',
                                 only_most_recent = F,
-                                remove_files = T,
-                                empty_trash = T,
                                 return_message = T) {
   if (only_most_recent == T) {
     date_data <-
@@ -5663,10 +5523,7 @@ get_data_gkg_tv_day <- function(date_data = "2016-06-01",
     purrr::map(function(x) {
       get_data_gkg_tv(
         url = x,
-        remove_files = remove_files,
-        file_directory = file_directory,
-        return_message = return_message,
-        empty_trash = empty_trash
+        return_message = return_message
       )
     }) %>%
     purrr::compact %>%
@@ -5699,10 +5556,7 @@ get_data_gkg_tv_day <- function(date_data = "2016-06-01",
 #'
 #' @examples
 get_data_gkg_tv_days <- function(dates = c("2016-06-01", "2016-02-01"),
-                                       file_directory = 'Desktop/temp_gdelt_data',
                                        only_most_recent = F,
-                                       remove_files = T,
-                                       empty_trash = T,
                                        return_message = T) {
   get_data_gkg_tv_day_safe <-
     failwith(NULL, get_data_gkg_tv_day)
@@ -5714,9 +5568,6 @@ get_data_gkg_tv_days <- function(dates = c("2016-06-01", "2016-02-01"),
         get_data_gkg_tv_day_safe(
           date_data = x,
           only_most_recent = only_most_recent,
-          file_directory = file_directory,
-          remove_files = remove_files,
-          empty_trash = empty_trash,
           return_message = return_message
         )
     ) %>%

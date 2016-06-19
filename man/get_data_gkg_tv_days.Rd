@@ -5,8 +5,7 @@
 \title{Get dates detailed data from a GKG TV tables}
 \usage{
 get_data_gkg_tv_days(dates = c("2016-06-01", "2016-02-01"),
-  file_directory = "Desktop/temp_gdelt_data", only_most_recent = F,
-  remove_files = T, empty_trash = T, return_message = T)
+  only_most_recent = F, return_message = T)
 }
 \description{
 Get dates detailed data from a GKG TV tables

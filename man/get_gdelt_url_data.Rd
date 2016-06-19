@@ -9,6 +9,9 @@
   file_directory = "Desktop/temp_gdelt_data", remove_files = T,
   empty_trash = T, return_message = T)
 }
+\value{
+
+}
 \description{
 Retrieves GDELT Event or GKG data from a given URL
 }

@@ -5,8 +5,7 @@
 \title{Get Data CV Day}
 \usage{
 get_data_vgkg_day(date_data = "2016-06-08", include_translations = F,
-  only_most_recent = F, file_directory = "Desktop/temp_gdelt_data",
-  remove_files = T, empty_trash = T, return_message = T)
+  only_most_recent = F, return_message = T)
 }
 \arguments{
 \item{return_message}{}

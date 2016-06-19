@@ -4,9 +4,8 @@
 \alias{get_data_gkg_tv_day}
 \title{Retrieves detailed GKG data for a given day from a specified table}
 \usage{
-get_data_gkg_tv_day(date_data = "2016-06-01",
-  file_directory = "Desktop/temp_gdelt_data", only_most_recent = F,
-  remove_files = T, empty_trash = T, return_message = T)
+get_data_gkg_tv_day(date_data = "2016-06-01", only_most_recent = F,
+  return_message = T)
 }
 \arguments{
 \item{date_data}{must be a date in Year - Month - Day format}

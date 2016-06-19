@@ -6,8 +6,7 @@
 \usage{
 
   get_data_gkg_tv(url = "http://data.gdeltproject.org/gdeltv2_iatelevision/20160609.gkg.csv.gz",
-  file_directory = "Desktop/temp_gdelt_data", remove_files = T,
-  empty_trash = T, return_message = T)
+  return_message = T)
 }
 \description{
 Gets TV data from a URL
