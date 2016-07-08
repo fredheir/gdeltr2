@@ -253,15 +253,19 @@ get_data_ft_api_term <-
       page.has.content$headers  %>%
       flatten_df
 
-    if ('content-length' %in% names(page_size_df)) {
-      page_size_df <-
-        page_size_df %>%
-        mutate(`content-length` = `content-length` %>% as.numeric)
+    if (!page.has.content$status_code == 200) {
+      stop("Seaerch has no data")
+      } else {
+        if ('content-length' %in% names(page_size_df)) {
+          page_size_df <-
+            page_size_df %>%
+            mutate(`content-length` = `content-length` %>% as.numeric)
 
-      if (page_size_df$`content-length` <= 41) {
-        stop("This search has no data")
+          if (page_size_df$`content-length` <= 41) {
+            stop("This search has no data")
+          }
+        }
       }
-    }
 
     page <-
       url %>%
@@ -458,7 +462,7 @@ get_data_ft_api_domains <- function(domains = c('washingtonpost.com', 'nytimes.c
                                     search_language = 'English',
                                     source_language = 'English',
                                     sort_by = 'date',
-                                    restrict_to_usa = T,
+                                    restrict_to_usa = F,
                                     dedeup_results = T,
                                     only_english = F,
                                     return_message = T) {
@@ -466,12 +470,12 @@ get_data_ft_api_domains <- function(domains = c('washingtonpost.com', 'nytimes.c
     failwith(NULL, get_data_ft_api_term)
 
   all_data <-
-    1:length(domains) %>%
+    domains %>%
     map(
       function(x)
         get_data_ft_api_term_safe(
           term = term,
-          domain = domains[x],
+          domain = x,
           return_image_url = return_image_url,
           last_minutes = last_minutes,
           max_rows = max_rows,

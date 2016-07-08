@@ -7,7 +7,7 @@
 get_data_ft_api_domains(domains = c("washingtonpost.com", "nytimes.com"),
   use_exact_domains = F, term = NA, return_image_url = T,
   last_minutes = NA, max_rows = 1000, search_language = "English",
-  source_language = "English", sort_by = "date", restrict_to_usa = T,
+  source_language = "English", sort_by = "date", restrict_to_usa = F,
   dedeup_results = T, only_english = F, return_message = T)
 }
 \description{
