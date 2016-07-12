@@ -323,8 +323,8 @@ get_data_ft_api_term <-
 
     if (!domain %>% is.na) {
       url_df %<>%
-        mutate(domain = domain) %>%
-        dplyr::select(term, domain, everything())
+        mutate(domainSearch = domain) %>%
+        dplyr::select(term, domainSearch, everything())
     }
 
     if (!tone_more_than %>% is.na) {
@@ -701,8 +701,8 @@ get_data_wordcloud_ft_api <-
 
     if (!domain %>% is.na) {
       wordcloud_data %<>%
-        mutate(domain = domain) %>%
-        dplyr::select(term, domain, everything())
+        mutate(domainSearch = domain) %>%
+        dplyr::select(term, domainSearch, everything())
     }
 
     if (term %>% is.na()) {
@@ -1054,8 +1054,8 @@ get_data_sentiment_ft_api <- function(term = 'Clinton',
 
   if (!domain %>% is.na) {
     sentiment_data %<>%
-      mutate(domain = domain) %>%
-      dplyr::select(term, domain, everything())
+      mutate(domainSearch = domain) %>%
+      dplyr::select(term, domainSearch, everything())
   }
 
   if (term %>% is.na()) {
