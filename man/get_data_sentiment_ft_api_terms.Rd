@@ -8,7 +8,7 @@ get_data_sentiment_ft_api_terms(terms = c("Zika",
   "\\"Golden State Warriors\\""), domain = NA, last_minutes = NA,
   is_tone = T, tone_less_than = NA, tone_more_than = NA,
   search_language = NA, source_language = NA, sort_by = "date",
-  dedeup_results = T, return_message = T)
+  dedeup_results = T, nest_data = F, return_message = T)
 }
 \arguments{
 \item{domain}{\code{c(NA, "domain_name")}}

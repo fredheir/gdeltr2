@@ -8,12 +8,35 @@ get_data_wordcloud_ft_api_terms(terms = c("\\"Donald Trump\\"",
   "\\"Hilary Clinton\\""), domain = NA, last_minutes = NA,
   search_language = "English", tone_more_than = NA, tone_less_than = NA,
   source_language = "English", sort_by = "date", dedeup_results = T,
-  return_message = T)
+  nest_data = F, return_message = T)
 }
 \arguments{
-\item{domain}{\code{c(NA, "domain_name")}}
+\item{terms}{any word, can be quoted or not}
 
-\item{return_message}{}
+\item{domain}{domain name
+\code{c(NA,'domain_name')}}
+
+\item{last_minutes}{how many prior minutes}
+
+\item{tone_more_than}{tone less than specified number}
+
+\item{tone_less_than}{tone more than specified number}
+
+\item{sort_by}{How do you wish to sort the data
+\code{c('date', 'relevence', 'tone.ascending', 'tone.descending')}}
+
+\item{dedeup_results}{return unique results
+\code{c(T, F)}}
+
+\item{nest_data}{returns a nested data frame
+\code{c(T, F)}}
+
+\item{return_message}{\code{c(T, F)}}
+
+\item{max_rows}{number of rows}
+
+\item{only_english}{return only english results
+\code{c(T, F)}}
 }
 \description{
 Returns GDELT free text API word clouds for a given term, can be domain restricted

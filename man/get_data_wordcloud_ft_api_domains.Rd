@@ -8,12 +8,10 @@ get_data_wordcloud_ft_api_domains(domains = c("nytimes.com",
   "washingtonpost.com"), term = NA, last_minutes = NA,
   search_language = "English", tone_more_than = NA, tone_less_than = NA,
   source_language = "English", sort_by = "date", dedeup_results = T,
-  return_message = T)
+  nest_data = F, return_message = T)
 }
 \arguments{
 \item{term}{options \code{c(NA, "term_name")}}
-
-\item{return_message}{}
 }
 \description{
 Returns GDELT free text API word clouds for a given domain, can be term restricted

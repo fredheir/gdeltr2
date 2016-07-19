@@ -2,20 +2,18 @@
 % Please edit documentation in R/gdelt_event_gkg.R
 \name{get_data_gkg_tv_day}
 \alias{get_data_gkg_tv_day}
-\title{Retrieves detailed GKG data for a given day from a specified table}
+\title{Gets GKG TV data for given day}
 \usage{
 get_data_gkg_tv_day(date_data = "2016-06-01", only_most_recent = F,
   return_message = T)
 }
 \arguments{
-\item{date_data}{must be a date in Year - Month - Day format}
-
-\item{table_name}{options \code{c('gkg', 'export', 'mentions'))}}
+\item{return_message}{}
 }
 \value{
 
 }
 \description{
-Retrieves detailed GKG data for a given day from a specified table
+Gets GKG TV data for given day
 }
 

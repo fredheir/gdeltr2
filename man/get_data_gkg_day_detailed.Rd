@@ -11,7 +11,8 @@ get_data_gkg_day_detailed(date_data = "2016-06-01", table_name = "gkg",
 \arguments{
 \item{date_data}{must be a date in Year - Month - Day format}
 
-\item{table_name}{options \code{c('gkg', 'export', 'mentions'))}}
+\item{table_name}{the name of the table
+options \code{c('gkg', 'export', 'mentions'))}}
 }
 \value{
 

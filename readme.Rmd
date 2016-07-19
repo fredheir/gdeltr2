@@ -94,7 +94,10 @@ The data tidying functions begin with `parse_` and they apply to a number of the
 	  * Each day contains a count file and the full gkg output.
 	* `get_data_gkg_day_summary()` retrieves GKG daily summary data for specified date(s), this captures *count files* by `is_count_file = T`
 	* `get_data_gkg_days_detailed()` - retrieves GKG data from the data cached every 15 minutes for specified date(s) for a given table.  The table can be one of `c('gkg', 'export', 'mentions')`.  This function may require significant bandwidth and memory given the potential file sizes.
-	
+
+* <strong>[Location Sentiment API](http://blog.gdeltproject.org/announcing-the-gdelt-stability-dashboard-api-stability-timeline/)</strong>
+	* `get_codes_stability_locations()` - retrieves possible locations
+	* `get_data_locations_instability_api()` - retrieves instability data for a specified location and time period.  Variables can be `c('instability', 'conflict', 'protest', 'tone', 'relative mentions')` Time periods can be `c('daily', '15 minutes')`, for `daily` the data is the average per day of the specified variable for the last 180 days and for `15 minutes` the data is the variable reading every 15 minutes for the last week.
 	
 * <strong>Visual Global Knowledge Graph</strong>
 	* `get_urls_vgkg()` - retrieves VGKG log urls
@@ -156,13 +159,30 @@ test_terms <-
   c('"Brooklyn Nets"', 'El Chapo', '"Hassan Whiteside"', '"EB5"', '"Toy Poodle"')
 
 term_data <- 
-  get_data_ft_api_terms(terms = test_terms, max_rows = 10000, only_english = T, domain = NA)
+  get_data_ft_api_terms(
+    terms = test_terms,
+    dedeup_results = T,
+    only_english = T,
+    restrict_to_usa = F,
+    max_rows = 15000,
+    nest_data = F,
+    sort_by = 'date',
+    return_image_url = F,
+    domain = NA,
+    return_message = T
+  )
 
 test_domains <- 
   c('realdeal.com', 'nytimes.com', 'curbed.com', 'pehub.com', 'wsj.com')
   
 domain_data <- 
   get_data_ft_api_domains(term = NA, domains = test_domains)
+
+nested_domains <- 
+  get_data_ft_api_domains(
+    domains = c('netsdaily.com', 'washingtonpost.com', 'curbed.com'),
+    nest_data = T
+  )
 
 domain_wordcloud <- 
   get_data_wordcloud_ft_api_domains(domains = test_domains, term = NA, tone_more_than = 1)
@@ -180,14 +200,14 @@ domain_sentiment <-
 
 ### GDELT Event Data
 ```{r eval=FALSE}
-events_1989 <- 
+events_1989 <-
   get_data_gdelt_periods_event(
     periods = 1989,
     file_directory = 'Desktop/gkg_temp',
     remove_files = T,
     empty_trash = T,
     return_message = T
-    )
+  )
 ```
 
 ### GKG Data
@@ -195,32 +215,32 @@ events_1989 <-
 ```{r eval=FALSE}
 gkg_summary_count_may_15_16_2014 <-
   get_data_gkg_days_summary(
-  dates = c('2014-05-15', '2014-05-16'),
-  is_count_file = T,
-  file_directory = 'Desktop/gkg_temp',
-  remove_files = T,
-  empty_trash = T,
-  return_message = T
+    dates = c('2014-05-15', '2014-05-16'),
+    is_count_file = T,
+    file_directory = 'Desktop/gkg_temp',
+    remove_files = T,
+    empty_trash = T,
+    return_message = T
   )
 
 gkg_full_june_2_2016 <-
   get_data_gkg_days_detailed(
-  dates = c("2016-06-02"),
-  table_name = 'gkg',
-  file_directory = 'Desktop/gkg_temp',
-  remove_files = T,
-  empty_trash = T,
-  return_message = T
+    dates = c("2016-06-02"),
+    table_name = 'gkg',
+    file_directory = 'Desktop/gkg_temp',
+    remove_files = T,
+    empty_trash = T,
+    return_message = T
   )
-  
-  gkg_mentions_may_12_2016 <-
+
+gkg_mentions_may_12_2016 <-
   get_data_gkg_days_detailed(
-  dates = c("2016-05-12"),
-  table_name = 'mentions',
-  file_directory = 'Desktop/gkg_temp',
-  remove_files = T,
-  empty_trash = T,
-  return_message = T
+    dates = c("2016-05-12"),
+    table_name = 'mentions',
+    file_directory = 'Desktop/gkg_temp',
+    remove_files = T,
+    empty_trash = T,
+    return_message = T
   )
 ```
 
@@ -327,4 +347,29 @@ search_test <-
   vgkg_sample %>% 
   parse_vgkg_safe_search(return_wide = F)
 
+```
+
+#### Sentiment API
+
+```{r eval=F}
+location_codes <-
+  get_codes_stability_locations()
+location_test <-
+  get_data_locations_instability_api(
+    location_ids = c("US", "IS", "CA", "TU", "CH", "UK", "IR"),
+    use_multi_locations = c(T, F),
+    variable_names = c('instability', 'tone', 'protest', 'conflict'),
+    time_periods = c('daily'),
+    nest_data = F,
+    days_moving_average = NA,
+    return_wide = T,
+    return_message = T
+  )
+
+location_test %>%
+  dplyr::filter(codeLocation %>% is.na()) %>%
+  group_by(nameLocation) %>%
+  summarise_at(.cols = c('instability', 'tone', 'protest', 'conflict'),
+               funs(mean)) %>%
+  arrange(desc(instability))
 ```

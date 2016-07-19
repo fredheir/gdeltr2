@@ -2,12 +2,15 @@
 % Please edit documentation in R/gdelt_event_gkg.R
 \name{get_data_gkg_tv_days}
 \alias{get_data_gkg_tv_days}
-\title{Get dates detailed data from a GKG TV tables}
+\title{Gets GKG TV data for specified days}
 \usage{
 get_data_gkg_tv_days(dates = c("2016-06-01", "2016-02-01"),
   only_most_recent = F, return_message = T)
 }
+\arguments{
+\item{return_message}{}
+}
 \description{
-Get dates detailed data from a GKG TV tables
+Gets GKG TV data for specified days
 }
 

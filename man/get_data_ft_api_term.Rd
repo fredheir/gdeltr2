@@ -13,7 +13,27 @@ get_data_ft_api_term(term = "\\"Brooklyn Nets\\"", domain = NA,
 \arguments{
 \item{term}{any word, can be quoted or not}
 
-\item{domain}{\code{c(NA,'domain_name')}}
+\item{domain}{domain name
+\code{c(NA,'domain_name')}}
+
+\item{dedeup_results}{return unique results
+\code{c(T, F)}}
+
+\item{last_minutes}{how many prior minutes}
+
+\item{max_rows}{number of rows}
+
+\item{only_english}{return only english results
+\code{c(T, F)}}
+
+\item{tone_less_than}{tone more than specified number}
+
+\item{tone_more_than}{tone less than specified number}
+
+\item{sort_by}{How do you wish to sort the data
+\code{c('date', 'relevence', 'tone.ascending', 'tone.descending')}}
+
+\item{return_message}{\code{c(T, F)}}
 }
 \value{
 

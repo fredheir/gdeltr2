@@ -8,6 +8,9 @@ get_data_gdelt_period_event(period = 1983,
   file_directory = "Desktop/temp_gdelt_data", remove_files = T,
   empty_trash = T, return_message = T)
 }
+\arguments{
+\item{period}{the GDELT period}
+}
 \value{
 
 }

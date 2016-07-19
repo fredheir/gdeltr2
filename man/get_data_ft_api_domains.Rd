@@ -8,7 +8,8 @@ get_data_ft_api_domains(domains = c("washingtonpost.com", "nytimes.com"),
   use_exact_domains = F, term = NA, return_image_url = T,
   last_minutes = NA, max_rows = 1000, search_language = "English",
   source_language = "English", sort_by = "date", restrict_to_usa = F,
-  dedeup_results = T, only_english = F, return_message = T)
+  dedeup_results = T, only_english = F, nest_data = F,
+  return_message = T)
 }
 \description{
 Returns GDELT free text API results for multiple webdomains

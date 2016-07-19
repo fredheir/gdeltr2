@@ -9,9 +9,19 @@ get_data_gkg_day_summary(date_data = "2016-06-01",
   remove_files = T, empty_trash = T, return_message = T)
 }
 \arguments{
-\item{is_count_file}{options \code{c(TRUE, FALSE)}}
+\item{date_data}{Date of the data, must be in year, month day form.}
 
-\item{return_message}{}
+\item{file_directory}{location of where the file is to be saved}
+
+\item{is_count_file}{options
+\code{c(TRUE, FALSE)}}
+
+\item{remove_files}{\code{c(TRUE, FALSE)}}
+
+\item{empty_trash}{Empty trash
+\code{c(TRUE, FALSE)}}
+
+\item{return_message}{\code{c(TRUE, FALSE)}}
 }
 \value{
 

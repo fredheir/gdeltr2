@@ -507,8 +507,9 @@ get_codes_gkg_themes <- function(split_word_bank_codes = F) {
 #' Retrieves GDELT event summary by period
 #'
 #' @param period can be \code{c("yearly", "daily", "monthly")}
-#' @param by_country can be \code{c(TRUE, FALSE)}
-#' @param return_message
+#' @param by_country is data by country
+#' can be \code{c(TRUE, FALSE)}
+#' @param return_message returns message
 #' @importFrom readr read_csv
 #' @return
 #' @export
@@ -3605,7 +3606,8 @@ parse_gkg_mentioned_source_data <-
 #' Retrieves detailed GKG data for a given day from a specified table
 #'
 #' @param date_data must be a date in Year - Month - Day format
-#' @param table_name options \code{c('gkg', 'export', 'mentions'))}
+#' @param table_name the name of the table
+#' options \code{c('gkg', 'export', 'mentions'))}
 #' @param file_directory
 #' @param empty_trash
 #' @param return_message
@@ -3703,19 +3705,24 @@ get_data_gkg_day_detailed <- function(date_data = "2016-06-01",
 
 #' Get dates detailed data from a specified table
 #'
-#' @param dates
-#' @param table_name
-#' @param file_directory
-#' @param remove_files
-#' @param empty_trash
-#' @param return_message
+#' @param date_data must be a date in Year - Month - Day format
+#' @param table_name the name of the table
+#' options \code{c('gkg', 'export', 'mentions'))}
+#' @param file_directory where are the files to be saved
+#' @param remove_files Do you want to remove the files
+#' \code{T, F}
+#' @param empty_trash Do You want to empy the trash
+#' \code{T, F}
+#' @param return_message Do you want to return a message
+#' \code{T, F}
 #' @importFrom purrr map
+#' @import dplyr
 #' @return
 #' @export
 #'
 #' @examples
-get_data_gkg_days_detailed <- function(dates = c("2016-06-01"),
-                                       table_name = "gkg",
+get_data_gkg_days_detailed <- function(dates = c("2016-07-19"),
+                                       table_name = c("gkg"),
                                        file_directory = 'Desktop/temp_gdelt_data',
                                        only_most_recent = F,
                                        remove_files = T,
@@ -3724,13 +3731,19 @@ get_data_gkg_days_detailed <- function(dates = c("2016-06-01"),
   get_data_gkg_day_detailed_safe <-
     failwith(NULL, get_data_gkg_day_detailed)
 
+  var_matrix <-
+    expand.grid(date = dates,
+                table_name = table_name,
+                stringsAsFactors = F) %>%
+    as_data_frame()
+
   all_data <-
-    dates %>%
+    seq_len(var_matrix %>% nrow) %>%
     purrr::map(
       function(x)
         get_data_gkg_day_detailed_safe(
-          date_data = x,
-          table_name = table_name,
+          date_data = var_matrix$date[x],
+          table_name = var_matrix$table_name[x],
           only_most_recent = only_most_recent,
           file_directory = file_directory,
           remove_files = remove_files,
@@ -3761,12 +3774,16 @@ get_data_gkg_days_detailed <- function(dates = c("2016-06-01"),
 
 #' Retrieves gkg summary file for a given day
 #'
-#' @param date_data
-#' @param file_directory
-#' @param is_count_file options \code{c(TRUE, FALSE)}
+#' @param date_data Date of the data, must be in year, month day form.
+#' @param file_directory location of where the file is to be saved
+#' @param is_count_file options
+#' \code{c(TRUE, FALSE)}
 #' @param remove_files
-#' @param empty_trash
+#' \code{c(TRUE, FALSE)}
+#' @param empty_trash Empty trash
+#' \code{c(TRUE, FALSE)}
 #' @param return_message
+#' \code{c(TRUE, FALSE)}
 #'
 #' @return
 #'
@@ -3847,6 +3864,16 @@ get_data_gkg_day_summary <- function(date_data = "2016-06-01",
       mutate(idCAMEOEvents = idCAMEOEvents %>% as.character())
   }
 
+  if (is_count_file == F) {
+    all_data <-
+      all_data %>%
+      dplyr::rename(dateEvent = date)
+  }
+
+  all_data <-
+    all_data %>%
+    mutate(isCountFile = if_else(is_count_file, T, F))
+
 
   if (return_message == T) {
     "You retrieved " %>%
@@ -3860,7 +3887,6 @@ get_data_gkg_day_summary <- function(date_data = "2016-06-01",
 #' Gets days summary GDELT GKG data by table
 #'
 #' @param dates
-#' @param table_name
 #' @param file_directory
 #' @param remove_files
 #' @param empty_trash
@@ -3868,43 +3894,51 @@ get_data_gkg_day_summary <- function(date_data = "2016-06-01",
 #'
 #' @return
 #' @export
-#'
 #' @examples
-#' get_data_gkg_days_summary(dates = c("2016-06-01"), is_count_file = F)
+#' get_data_gkg_days_summary(dates = c("2016-07-18"), is_count_file = c(T, F))
 
 get_data_gkg_days_summary <- function(dates = c("2016-06-01"),
-                                      is_count_file = F,
+                                      is_count_file = c(T,F),
                                       file_directory = 'Desktop/temp_gdelt_data',
                                       remove_files = T,
                                       empty_trash = T,
+                                      nest_data = F,
                                       return_message = T) {
   get_data_gkg_day_summary_safe <-
     failwith(NULL, get_data_gkg_day_summary)
 
+  var_matrix <-
+    expand.grid(date = dates,
+                is_count_file = is_count_file,
+                stringsAsFactors = F) %>%
+    as_data_frame %>%
+    suppressWarnings()
+
   all_data <-
-    dates %>%
+    seq_len(var_matrix %>% nrow) %>%
     map(
       function(x)
         get_data_gkg_day_summary_safe(
-          date_data = x,
-          is_count_file = is_count_file,
+          date_data = var_matrix$date[x],
+          is_count_file = var_matrix$is_count_file[x],
           file_directory = file_directory,
           remove_files = remove_files,
           empty_trash = empty_trash,
           return_message = return_message
-        )
+        ) %>% suppressWarnings()
     ) %>%
     purrr::compact %>%
-    bind_rows
+    bind_rows %>%
+    arrange(idGKG) %>%
+    suppressWarnings()
 
   return(all_data)
 }
 
 #' Retreive GDELT data for a given period
 #'
-#' @param period
+#' @param period the GDELT period
 #' @param file_directory
-#' @param is_count_file
 #' @param remove_files
 #' @param empty_trash
 #' @param return_message
@@ -4006,7 +4040,8 @@ get_data_gdelt_periods_event <- function(periods = c(1983, 1989),
         )
     ) %>%
     purrr::compact %>%
-    bind_rows
+    bind_rows %>%
+    suppressWarnings()
 
   return(all_data)
 }
@@ -4099,7 +4134,7 @@ get_urls_vgkg <- function() {
 get_urls_vgkg_most_recent  <- function() {
   log_df <-
     'http://data.gdeltproject.org/gdeltv2_cloudvision/lastupdate.txt' %>%
-    readr::read_tsv(col_names = F)
+    read_tsv(col_names = F)
 
   names(log_df) <-
     c('value')
@@ -4482,7 +4517,6 @@ parse_gkg_xml_extras <- function(gdelt_data,
 #' @import tidyr
 #'
 #' @examples
-
 
 get_clean_count_vkg_data <-
   function(all_counts,
@@ -5457,17 +5491,14 @@ get_data_gkg_tv <-
     return(gkg_tv_data)
   }
 
-#' Retrieves detailed GKG data for a given day from a specified table
+#' Gets GKG TV data for given day
 #'
-#' @param date_data must be a date in Year - Month - Day format
-#' @param table_name options \code{c('gkg', 'export', 'mentions'))}
-#' @param file_directory
-#' @param empty_trash
+#' @param date_data
 #' @param return_message
+#'
 #' @return
 #'
 #' @examples
-
 get_data_gkg_tv_day <- function(date_data = "2016-06-01",
                                 only_most_recent = F,
                                 return_message = T) {
@@ -5542,18 +5573,15 @@ get_data_gkg_tv_day <- function(date_data = "2016-06-01",
 }
 
 
-#' Get dates detailed data from a GKG TV tables
+#' Gets GKG TV data for specified days
 #'
 #' @param dates
-#' @param table_name
-#' @param file_directory
-#' @param remove_files
-#' @param empty_trash
+#' @param only_most_recent
 #' @param return_message
-#' @importFrom purrr map
+#'
 #' @return
 #' @export
-#'
+#' @importFrom purrr map
 #' @examples
 get_data_gkg_tv_days <- function(dates = c("2016-06-01", "2016-02-01"),
                                        only_most_recent = F,

@@ -10,7 +10,10 @@ get_data_gdelt_period_event_totals(period = "yearly", by_country = T,
 \arguments{
 \item{period}{can be \code{c("yearly", "daily", "monthly")}}
 
-\item{by_country}{can be \code{c(TRUE, FALSE)}}
+\item{by_country}{is data by country
+can be \code{c(TRUE, FALSE)}}
+
+\item{return_message}{returns message}
 }
 \description{
 Retrieves GDELT event summary by period

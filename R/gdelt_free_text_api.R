@@ -1,24 +1,6 @@
-#' Loades Packages
-#'
-#' @param required_packages
-#'
-#' @return
-#'
-#' @examples
-load_needed_packages <- function(required_packages = c('dplyr')) {
-  loaded_packages <- gsub("package:", "", search())
-  package_to_load <- required_packages[!required_packages %in%
-                                         loaded_packages]
-  if (length(package_to_load) > 0) {
-    lapply(package_to_load, library, character.only = T)
-  }
-}
-
-
 #' Parses Source
 #'
 #' @param source
-#' @export
 #' @export
 #' @return
 #' @import tidyr
@@ -28,47 +10,53 @@ load_needed_packages <- function(required_packages = c('dplyr')) {
 #' @import stringr
 #'
 #' @examples
-parse_source <- function(source = "netsdaily.com - writedate('06/02/2016 12:00 UTC'); (English / United States)") {
-  source_df <-
-    data_frame(source) %>%
-    tidyr::separate(source,
-                    sep = '\\ - ',
-                    into = c('source', 'date.language')) %>%
-    tidyr::separate(date.language,
-                    sep = '\\;',
-                    into = c('date', 'language')) %>%
-    mutate(
-      language = language %>% str_replace('\\(', '') %>% str_replace('\\)', '')  %>% str_replace('\\ /', ','),
-      date = date %>% gsub('\\writedate', '', .) %>% str_replace_all('\\(', '') %>% str_replace_all('\\)', '') %>%
-        str_replace_all("\\'", '')
-    ) %>%
-    mutate(dateTime = date %>% mdy_hm %>% with_tz(Sys.timezone())) %>%
-    mutate(date = dateTime %>% as.Date) %>%
-    tidyr::separate(language,
-                    into = c('language', 'country'),
-                    sep = '\\, ') %>%
-    mutate_each_(funs(str_trim),
-                 vars = c('source', 'language', 'country')) %>%
-    suppressWarnings()
+parse_source <-
+  function(source = "netsdaily.com - writedate('06/02/2016 12:00 UTC'); (English / United States)") {
+    source_df <-
+      data_frame(source) %>%
+      tidyr::separate(source,
+                      sep = '\\ - ',
+                      into = c('source', 'date.language')) %>%
+      tidyr::separate(date.language,
+                      sep = '\\;',
+                      into = c('date', 'language')) %>%
+      mutate(
+        language = language %>% str_replace('\\(', '') %>% str_replace('\\)', '')  %>% str_replace('\\ /', ','),
+        date = date %>% gsub('\\writedate', '', .) %>% str_replace_all('\\(', '') %>% str_replace_all('\\)', '') %>%
+          str_replace_all("\\'", '')
+      ) %>%
+      mutate(dateTime = date %>% mdy_hm %>% with_tz(Sys.timezone())) %>%
+      mutate(date = dateTime %>% as.Date) %>%
+      tidyr::separate(language,
+                      into = c('language', 'country'),
+                      sep = '\\, ') %>%
+      mutate_each_(funs(str_trim),
+                   vars = c('source', 'language', 'country')) %>%
+      suppressWarnings()
 
-  return(source_df)
-}
+    return(source_df)
+  }
 
 #' Returns data frame for given term from GDELT free text API
 #'
 #' @param term any word, can be quoted or not
-#' @param domain \code{c(NA,'domain_name')}
+#' @param domain domain name
+#' \code{c(NA,'domain_name')}
 #' @param return_image_url
-#' @param last_minutes
-#' @param max_rows
-#' @param tone_less_than
-#' @param tone_more_than
+#' @param last_minutes how many prior minutes
+#' @param max_rows number of rows
+#' @param tone_less_than tone more than specified number
+#' @param tone_more_than tone less than specified number
 #' @param search_language
 #' @param source_language
-#' @param sort_by
-#' @param dedeup_results
-#' @param only_english
+#' @param sort_by How do you wish to sort the data
+#' \code{c('date', 'relevence', 'tone.ascending', 'tone.descending')}
+#' @param dedeup_results return unique results
+#' \code{c(T, F)}
+#' @param only_english return only english results
+#' \code{c(T, F)}
 #' @param return_message
+#' \code{c(T, F)}
 #' @importFrom jsonlite fromJSON
 #' @importFrom urltools url_encode
 #' @importFrom httr GET
@@ -255,17 +243,17 @@ get_data_ft_api_term <-
 
     if (!page.has.content$status_code == 200) {
       stop("Seaerch has no data")
-      } else {
-        if ('content-length' %in% names(page_size_df)) {
-          page_size_df <-
-            page_size_df %>%
-            mutate(`content-length` = `content-length` %>% as.numeric)
+    } else {
+      if ('content-length' %in% names(page_size_df)) {
+        page_size_df <-
+          page_size_df %>%
+          mutate(`content-length` = `content-length` %>% as.numeric)
 
-          if (page_size_df$`content-length` <= 41) {
-            stop("This search has no data")
-          }
+        if (page_size_df$`content-length` <= 41) {
+          stop("This search has no data")
         }
       }
+    }
 
     page <-
       url %>%
@@ -347,11 +335,13 @@ get_data_ft_api_term <-
       url_df %>%
       mutate(domainArticle = urltools::domain(urlArticle) %>% str_replace_all('www.', '')) %>%
       dplyr::select(term:urlArticle, domainArticle, everything()) %>%
-      dplyr::rename(dateTimeArticle = dateTime,
-                    dateArticle = date,
-                    countryArticle = country,
-                    languageArticle = language,
-                    sourceArticle = source)
+      dplyr::rename(
+        dateTimeArticle = dateTime,
+        dateArticle = date,
+        countryArticle = country,
+        languageArticle = language,
+        sourceArticle = source
+      )
 
     if (term %>% is.na()) {
       url_df <-
@@ -406,29 +396,56 @@ get_data_ft_api_terms <-
            search_language = 'English',
            source_language = 'English',
            sort_by = 'date',
+           nest_data = F,
            return_message = T) {
     get_data_ft_api_term_safe <-
       failwith(NULL, get_data_ft_api_term)
+
+    var_matrix <-
+      expand.grid(
+        term = terms,
+        domain = domain,
+        restrict_to_usa = restrict_to_usa,
+        only_english = only_english,
+        return_image_url = return_image_url,
+        last_minutes = last_minutes,
+        max_rows = max_rows,
+        search_language = search_language,
+        source_language = source_language,
+        stringsAsFactors = F
+      ) %>%
+      as_data_frame %>%
+      suppressWarnings()
+
     all_data <-
-      1:length(terms) %>%
+      seq_len(var_matrix %>% nrow) %>%
       map(
         function(x)
           get_data_ft_api_term_safe(
-            term = terms[x],
-            return_image_url = return_image_url,
-            last_minutes = last_minutes,
-            max_rows = max_rows,
-            search_language = search_language,
-            source_language = source_language,
+            term = var_matrix$term[x],
+            domain = var_matrix$domain[x],
+            return_image_url = var_matrix$return_image_url[x],
+            last_minutes = var_matrix$last_minutes[x],
+            max_rows = var_matrix$max_rows[x],
+            search_language = var_matrix$search_language[x],
+            source_language = var_matrix$source_language[x],
             sort_by = sort_by,
-            restrict_to_usa = restrict_to_usa,
-            only_english = T,
+            restrict_to_usa = var_matrix$restrict_to_usa[x],
+            only_english = var_matrix$only_english[x],
             dedeup_results = dedeup_results
           )
       ) %>%
       compact %>%
       bind_rows %>%
       arrange(desc(dateTimeArticle))
+
+    if (nest_data) {
+      all_data <-
+        all_data %>%
+        nest_(nest_cols =
+                all_data %>% dplyr::select(-one_of(c('term'))) %>% names,
+              key_col = 'data')
+    }
 
     return(all_data)
 
@@ -447,65 +464,93 @@ get_data_ft_api_terms <-
 #' @param dedeup_results
 #' @param only_english
 #' @param return_message
+#' @param nest_data
 #' @importFrom xml2 read_html
 #' @return
 #' @export
 #'
 #' @examples
 #' get_data_ft_api_domains(domains = c('realdeal.com', 'pehub.com', 'sbnation.com', 'wsj.com', 'seekingalpha.com')) %>% View
-get_data_ft_api_domains <- function(domains = c('washingtonpost.com', 'nytimes.com'),
-                                    use_exact_domains = F,
-                                    term = NA,
-                                    return_image_url = T,
-                                    last_minutes = NA,
-                                    max_rows = 1000,
-                                    search_language = 'English',
-                                    source_language = 'English',
-                                    sort_by = 'date',
-                                    restrict_to_usa = F,
-                                    dedeup_results = T,
-                                    only_english = F,
-                                    return_message = T) {
-  get_data_ft_api_term_safe <-
-    failwith(NULL, get_data_ft_api_term)
+get_data_ft_api_domains <-
+  function(domains = c('washingtonpost.com', 'nytimes.com'),
+           use_exact_domains = F,
+           term = NA,
+           return_image_url = T,
+           last_minutes = NA,
+           max_rows = 1000,
+           search_language = 'English',
+           source_language = 'English',
+           sort_by = 'date',
+           restrict_to_usa = F,
+           dedeup_results = T,
+           only_english = F,
+           nest_data = F,
+           return_message = T) {
+    get_data_ft_api_term_safe <-
+      failwith(NULL, get_data_ft_api_term)
 
-  all_data <-
-    domains %>%
-    map(
-      function(x)
-        get_data_ft_api_term_safe(
-          term = term,
-          domain = x,
-          return_image_url = return_image_url,
-          last_minutes = last_minutes,
-          max_rows = max_rows,
-          only_english = only_english,
-          restrict_to_usa = restrict_to_usa,
-          search_language = search_language,
-          source_language = source_language,
-          sort_by = sort_by,
-          dedeup_results = dedeup_results
-        )
-    ) %>%
-    compact %>%
-    bind_rows %>%
-    arrange(desc(dateTimeArticle))
+    var_matrix <-
+      expand.grid(
+        term = term,
+        domain = domains,
+        restrict_to_usa = restrict_to_usa,
+        only_english = only_english,
+        return_image_url = return_image_url,
+        last_minutes = last_minutes,
+        max_rows = max_rows,
+        search_language = search_language,
+        source_language = source_language,
+        stringsAsFactors = F
+      ) %>%
+      as_data_frame %>%
+      suppressWarnings()
 
-  if (term %>% is.na()) {
     all_data <-
-      all_data %>%
-      dplyr::select(-term)
+      seq_len(var_matrix %>% nrow) %>%
+      map(
+        function(x)
+          get_data_ft_api_term_safe(
+            term = var_matrix$term[x],
+            domain = var_matrix$domain[x],
+            return_image_url = var_matrix$return_image_url[x],
+            last_minutes = var_matrix$last_minutes[x],
+            max_rows = var_matrix$max_rows[x],
+            search_language = var_matrix$search_language[x],
+            source_language = var_matrix$source_language[x],
+            sort_by = sort_by,
+            restrict_to_usa = var_matrix$restrict_to_usa[x],
+            only_english = var_matrix$only_english[x],
+            dedeup_results = dedeup_results
+          ) %>%
+          suppressWarnings
+      ) %>%
+      compact %>%
+      bind_rows %>%
+      arrange(desc(dateTimeArticle))
+
+    if (term %>% is.na()) {
+      all_data <-
+        all_data %>%
+        dplyr::select(-term)
+    }
+
+    if (use_exact_domains == T) {
+      all_data <-
+        all_data %>%
+        dplyr::filter(domainArticle %in% domains)
+    }
+
+    if (nest_data) {
+      all_data <-
+        all_data %>%
+        nest_(nest_cols =
+                all_data %>% dplyr::select(-one_of(c('domainSearch'))) %>% names,
+              key_col = 'data')
+    }
+
+    return(all_data)
+
   }
-
-  if (use_exact_domains == T) {
-    all_data <-
-      all_data %>%
-      dplyr::filter(domainArticle %in% domains)
-  }
-
-  return(all_data)
-
-}
 
 #' Retrives word cloud data from GDELT free text API for a given term, domain or term and domain
 #'
@@ -686,7 +731,7 @@ get_data_wordcloud_ft_api <-
       mutate(term, url, dateTimeData = Sys.time()) %>%
       dplyr::select(term, everything())
 
-  names(wordcloud_data)[2:3] <-
+    names(wordcloud_data)[2:3] <-
       c('word', 'articles')
 
     wordcloud_data <-
@@ -694,8 +739,10 @@ get_data_wordcloud_ft_api <-
       tidyr::separate(articles,
                       into = c('countArticles', 'size'),
                       sep = '\\(') %>%
-      mutate(countArticles = countArticles %>% extract_numeric(),
-             size = size %>% extract_numeric) %>%
+      mutate(
+        countArticles = countArticles %>% extract_numeric(),
+        size = size %>% extract_numeric
+      ) %>%
       dplyr::rename(urlSearch = url,
                     sizeWord = size)
 
@@ -735,6 +782,7 @@ get_data_wordcloud_ft_api <-
 
   }
 
+
 #' Returns GDELT free text API word clouds for a given domain, can be term restricted
 #'
 #' @param domains
@@ -747,7 +795,7 @@ get_data_wordcloud_ft_api <-
 #' @param sort_by
 #' @param dedeup_results
 #' @param return_message
-#'
+#' @param nest_data
 #' @return
 #' @export
 #'
@@ -763,29 +811,54 @@ get_data_wordcloud_ft_api_domains <-
            source_language = 'English',
            sort_by = 'date',
            dedeup_results = T,
+           nest_data = F,
            return_message = T) {
     get_data_wordcloud_ft_api_safe <-
       failwith(NULL, get_data_wordcloud_ft_api)
 
+    var_matrix <-
+      expand.grid(
+        domain = domains,
+        term = term,
+        last_minutes = last_minutes,
+        search_language = search_language,
+        tone_more_than = tone_more_than,
+        tone_less_than = tone_less_than,
+        source_language = source_language,
+        stringsAsFactors = F
+      ) %>%
+      as_data_frame %>%
+      suppressWarnings()
+
     all_data <-
-      1:length(domains) %>%
+      seq_len(var_matrix %>% nrow) %>%
       map(
         function(x)
-          get_data_wordcloud_ft_api(
-            term = term,
-            domain = domains[x],
-            last_minutes = last_minutes,
-            search_language = search_language,
-            tone_more_than = tone_more_than,
-            tone_less_than = tone_less_than,
-            source_language = source_language,
+          get_data_wordcloud_ft_api_safe(
+            term = var_matrix$term[x],
+            domain = var_matrix$domain[x],
+            last_minutes = var_matrix$last_minutes[x],
+            search_language = var_matrix$search_language[x],
+            tone_more_than = var_matrix$tone_more_than[x],
+            tone_less_than = var_matrix$tone_less_than[x],
+            source_language = var_matrix$source_language[x],
             sort_by = sort_by,
             dedeup_results = dedeup_results,
             return_message = return_message
-          )
+          ) %>%
+          suppressWarnings()
       ) %>%
       compact %>%
-      bind_rows
+      bind_rows %>%
+      suppressWarnings()
+
+    if (nest_data) {
+      all_data <-
+        all_data %>%
+        nest_(nest_cols =
+                all_data %>% dplyr::select(-one_of(c('domainSearch'))) %>% names,
+              key_col = 'data')
+    }
 
     return(all_data)
 
@@ -793,17 +866,27 @@ get_data_wordcloud_ft_api_domains <-
 
 #' Returns GDELT free text API word clouds for a given term, can be domain restricted
 #'
-#' @param terms
-#' @param domain  \code{c(NA, "domain_name")}
-#' @param last_minutes
+#' @param terms any word, can be quoted or not
+#' @param domain domain name
+#' \code{c(NA,'domain_name')}
+#' @param return_image_url
+#' @param last_minutes how many prior minutes
+#' @param max_rows number of rows
+#' @param tone_less_than tone more than specified number
+#' @param tone_more_than tone less than specified number
 #' @param search_language
-#' @param tone_more_than
-#' @param tone_less_than
 #' @param source_language
-#' @param sort_by
-#' @param dedeup_results
+#' @param sort_by How do you wish to sort the data
+#' \code{c('date', 'relevence', 'tone.ascending', 'tone.descending')}
+#' @param dedeup_results return unique results
+#' \code{c(T, F)}
+#' @param only_english return only english results
+#' \code{c(T, F)}
 #' @param return_message
-#'
+#' \code{c(T, F)}
+#' @param nest_data returns a nested data frame
+#' \code{c(T, F)}
+#' @importFrom tidyr nest
 #' @return
 #' @export
 #'
@@ -818,22 +901,37 @@ get_data_wordcloud_ft_api_terms <-
            source_language = 'English',
            sort_by = 'date',
            dedeup_results = T,
+           nest_data = F,
            return_message = T) {
     get_data_wordcloud_ft_api_safe <-
       failwith(NULL, get_data_wordcloud_ft_api)
 
+    var_matrix <-
+      expand.grid(
+        domain = domain,
+        term = terms,
+        last_minutes = last_minutes,
+        search_language = search_language,
+        tone_more_than = tone_more_than,
+        tone_less_than = tone_less_than,
+        source_language = source_language,
+        stringsAsFactors = F
+      ) %>%
+      as_data_frame %>%
+      suppressWarnings()
+
     all_data <-
-      1:length(terms) %>%
+      seq_len(var_matrix %>% nrow) %>%
       map(
         function(x)
-          get_data_wordcloud_ft_api(
-            term = terms[x],
-            domain = domain,
-            last_minutes = last_minutes,
-            search_language = search_language,
-            tone_more_than = tone_more_than,
-            tone_less_than = tone_less_than,
-            source_language = source_language,
+          get_data_wordcloud_ft_api_safe(
+            term = var_matrix$term[x],
+            domain = var_matrix$domain[x],
+            last_minutes = var_matrix$last_minutes[x],
+            search_language = var_matrix$search_language[x],
+            tone_more_than = var_matrix$tone_more_than[x],
+            tone_less_than = var_matrix$tone_less_than[x],
+            source_language = var_matrix$source_language[x],
             sort_by = sort_by,
             dedeup_results = dedeup_results,
             return_message = return_message
@@ -841,6 +939,14 @@ get_data_wordcloud_ft_api_terms <-
       ) %>%
       compact %>%
       bind_rows
+
+    if (nest_data) {
+      all_data <-
+        all_data %>%
+        nest_(nest_cols =
+                all_data %>% dplyr::select(-one_of(c('term'))) %>% names,
+              key_col = 'data')
+    }
 
     return(all_data)
 
@@ -865,16 +971,16 @@ get_data_wordcloud_ft_api_terms <-
 #'
 #' @examples
 get_data_sentiment_ft_api <- function(term = 'Clinton',
-                                                 domain = NA,
-                                                 last_minutes = NA,
-                                                 is_tone = T,
-                                                 tone_less_than = NA,
-                                                 tone_more_than = NA,
-                                                 search_language = NA,
-                                                 source_language = NA,
-                                                 sort_by = 'date',
-                                                 dedeup_results = T,
-                                                 return_message = T) {
+                                      domain = NA,
+                                      last_minutes = NA,
+                                      is_tone = T,
+                                      tone_less_than = NA,
+                                      tone_more_than = NA,
+                                      search_language = NA,
+                                      source_language = NA,
+                                      sort_by = 'date',
+                                      dedeup_results = T,
+                                      return_message = T) {
   url_base <-
     'http://api.gdeltproject.org/api/v1/search_ftxtsearch/search_ftxtsearch?query='
 
@@ -1058,6 +1164,18 @@ get_data_sentiment_ft_api <- function(term = 'Clinton',
       dplyr::select(term, domainSearch, everything())
   }
 
+  if (!tone_less_than %>% is.na()) {
+    sentiment_data <-
+      sentiment_data %>%
+      mutate(tone_less_than)
+  }
+
+  if (!tone_more_than %>% is.na()) {
+    sentiment_data <-
+      sentiment_data %>%
+      mutate(tone_more_than)
+  }
+
   if (term %>% is.na()) {
     sentiment_data <-
       sentiment_data %>%
@@ -1090,7 +1208,7 @@ get_data_sentiment_ft_api <- function(term = 'Clinton',
 #' @param sort_by
 #' @param dedeup_results
 #' @param return_message
-#'
+#' @param nest_data
 #' @return
 #' @export
 #'
@@ -1107,30 +1225,55 @@ get_data_sentiment_ft_api_domains <-
            source_language = NA,
            sort_by = 'date',
            dedeup_results = T,
+           nest_data = F,
            return_message = T) {
     get_data_sentiment_ft_api_safe <-
       failwith(NULL, get_data_sentiment_ft_api)
 
+    var_matrix <-
+      expand.grid(
+        term = term,
+        domain = domains,
+        is_tone = is_tone,
+        last_minutes = last_minutes,
+        tone_less_than = tone_less_than,
+        tone_more_than = tone_more_than,
+        search_language = search_language,
+        source_language = source_language,
+        stringsAsFactors = F
+      ) %>%
+      as_data_frame %>%
+      suppressWarnings()
+
     all_data <-
-      1:length(domains) %>%
+      seq_len(var_matrix %>% nrow) %>%
       map(
         function(x)
           get_data_sentiment_ft_api_safe(
-            term = term,
-            domain = domains[x],
-            last_minutes = last_minutes,
-            is_tone = is_tone,
-            tone_less_than = tone_less_than,
-            tone_more_than = tone_more_than,
-            search_language = search_language,
-            source_language = source_language,
+            term = var_matrix$term[x],
+            domain = var_matrix$domain[x],
+            last_minutes = var_matrix$last_minutes[x],
+            is_tone = var_matrix$is_tone[x],
+            tone_less_than = var_matrix$tone_less_than[x],
+            tone_more_than = var_matrix$tone_more_than[x],
+            search_language = var_matrix$search_language[x],
+            source_language = var_matrix$source_language[x],
             sort_by = sort_by,
             dedeup_results = dedeup_results,
             return_message = return_message
-          )
+          ) %>%
+          suppressMessages
       ) %>%
       compact %>%
       bind_rows
+
+    if (nest_data) {
+      all_data <-
+        all_data %>%
+        nest_(nest_cols =
+                all_data %>% dplyr::select(-one_of(c('domainSearch'))) %>% names,
+              key_col = 'data')
+    }
 
     return(all_data)
 
@@ -1165,31 +1308,448 @@ get_data_sentiment_ft_api_terms <-
            source_language = NA,
            sort_by = 'date',
            dedeup_results = T,
+           nest_data = F,
            return_message = T) {
     get_data_sentiment_ft_api_safe <-
       failwith(NULL, get_data_sentiment_ft_api)
 
+    var_matrix <-
+      expand.grid(
+        term = terms,
+        domain = domain,
+        is_tone = is_tone,
+        last_minutes = last_minutes,
+        tone_less_than = tone_less_than,
+        tone_more_than = tone_more_than,
+        search_language = search_language,
+        source_language = source_language,
+        stringsAsFactors = F
+      ) %>%
+      as_data_frame %>%
+      suppressWarnings()
+
+
     all_data <-
-      1:length(terms) %>%
+      seq_len(var_matrix %>% nrow) %>%
       map(
         function(x)
           get_data_sentiment_ft_api_safe(
-            term = terms[x],
-            domain = domain,
-            last_minutes = last_minutes,
-            is_tone = is_tone,
-            tone_less_than = tone_less_than,
-            tone_more_than = tone_more_than,
-            search_language = search_language,
-            source_language = source_language,
+            term = var_matrix$term[x],
+            domain = var_matrix$domain[x],
+            last_minutes = var_matrix$last_minutes[x],
+            is_tone = var_matrix$is_tone[x],
+            tone_less_than = var_matrix$tone_less_than[x],
+            tone_more_than = var_matrix$tone_more_than[x],
+            search_language = var_matrix$search_language[x],
+            source_language = var_matrix$source_language[x],
             sort_by = sort_by,
             dedeup_results = dedeup_results,
             return_message = return_message
-          )
+          ) %>%
+          suppressMessages
       ) %>%
       compact %>%
-      bind_rows
+      bind_rows %>%
+      suppressWarnings()
+
+    if (nest_data) {
+      all_data <-
+        all_data %>%
+        nest_(nest_cols =
+                all_data %>% dplyr::select(-one_of(c('term'))) %>% names,
+              key_col = 'data')
+    }
 
     return(all_data)
 
+  }
+
+
+#' get_codebook_stability_locations
+#'
+#' @return
+#' @export
+#' @import dplyr readr tidyr
+#' @examples
+get_codes_stability_locations <- function() {
+  country_df <-
+    'http://data.gdeltproject.org/blog/stability-dashboard-api/GEOLOOKUP-COUNTRY.TXT' %>%
+    read_tsv(col_names = F) %>%
+    set_names(c('idLocation', 'nameLocation')) %>%
+    separate(nameLocation, into = c('NL1', 'NL2'), sep = '\\, ') %>%
+    mutate(nameLocation = ifelse(NL2 %>% is.na, NL1, paste(NL2, NL1))) %>%
+    dplyr::select(-c(NL2, NL1)) %>%
+    suppressWarnings() %>%
+    suppressMessages() %>%
+    mutate(isCountry = T,
+           codeCountry = idLocation)
+
+  place_df <-
+    'http://data.gdeltproject.org/blog/stability-dashboard-api/GEOLOOKUP-ADM1.TXT' %>%
+    read_tsv(col_names = F) %>%
+    set_names(c('idLocation', 'nameLocation')) %>%
+    mutate(
+      nameLocation = nameLocation %>% str_to_title(),
+      nameLocation =  nameLocation %>% str_replace_all("Bahamas, The General, Bahamas, The", "The Bahamas") %>% str_replace_all(
+        "Etorofu, Habomai, Kunashiri And Shikotan Islands General, Etorofu, Habomai, Kunashiri And Shikotan Islands",
+        "Kuril Islands"
+      ) %>% str_replace_all('Serbia And Montenegro General,', 'Serbia and Montenegro') %>% str_replace_all(" Of ", ' of '),
+      isCountry = F,
+      codeCountry = idLocation %>% substr(1, 2),
+      codeLocation = idLocation %>% substr(3, 4),
+      idADM1 = idLocation
+    ) %>%
+    separate(
+      nameLocation,
+      into = c('placeLocation', 'countryLocation'),
+      sep = '\\, ',
+      remove = F
+    ) %>%
+    suppressWarnings() %>%
+    suppressMessages()
+
+  location_df <-
+    place_df %>%
+    bind_rows(country_df) %>%
+    arrange(idLocation) %>%
+    mutate(countryLocation = if_else(countryLocation %>% is.na, nameLocation, countryLocation))
+
+  return(location_df)
+
+}
+
+#' Removes full NA columns from specified data frame
+#'
+#' @param data a data frame
+#' @param col_name specified column
+#'
+#' @return
+#' @import dplyr magrittr
+#' @examples
+remove_full_na_column <-
+  function(data, col_name = c('codeLocation')) {
+    col_selected <-
+      data %>%
+      dplyr::select(one_of(col_name)) %>%
+      extract2(1)
+
+    if (col_selected %>% is.na() %>% sum  / length(col_selected) == 1) {
+      data <-
+        data %>%
+        dplyr::select(-one_of(col_name))
+    }
+    return(data)
+  }
+
+
+
+#' Gets instability data for given location
+#'
+#' @param location_id
+#' @param day_moving_average
+#' @param time_period
+#' @param use_multi_locations
+#' @param return_wide
+#' @param return_message
+#'
+#' @return
+#'
+#' @examples
+get_data_location_instability_api <-
+  function(location_id = 'US',
+           variable_name = 'instability',
+           day_moving_average = NA,
+           time_period = 'daily',
+           use_multi_locations = F,
+           return_wide = T,
+           return_message = T) {
+    if (!'location_codes' %>% exists) {
+      location_codes <-
+        get_codes_stability_locations()
+
+      'To save time please run the function get_codes_stability_locations() and save to a dataframe called location_codes prior to running this function' %>%
+        message
+    }
+
+    if (!location_id %in% location_codes$idLocation) {
+      stop("Sorry " %>% paste0(location_id, ' is not a valid location'))
+    }
+
+    var_df <-
+      data_frame(
+        idVar = c('instability', 'conflict', 'protest', 'tone', 'artvolnorm'),
+        nameVar = c(
+          'instability',
+          'conflict',
+          'protest',
+          'tone',
+          'relative mentions'
+        )
+      )
+
+    if (!variable_name %>% str_to_lower %in% var_df$idVar) {
+      stop("Variable names can only be:\n" %>%
+             paste0(paste0(var_df$nameVar, collapse = '\n')))
+    }
+
+    if (!time_period %>% str_to_lower() %in% c('daily', '15min', '15minutes', '15 minutes', '15 minute periods')) {
+      stop("Time period can only be daily or 15 minute periods")
+    }
+
+    id_var <-
+      var_df %>% dplyr::filter(nameVar == variable_name) %>% .$idVar
+
+    var_slug <-
+      '&VAR=' %>% paste0(id_var)
+
+    if (time_period == "daily") {
+      period_slug <-
+        "&TIMERES=day"
+      period_name <-
+        'dateData'
+    } else {
+      period_slug <-
+        "&TIMERES=15min"
+      period_name <-
+        'datetimeData'
+    }
+
+    output_slug <-
+      "&OUTPUT=csv"
+
+    if (use_multi_locations == T &
+        (!location_id %>% nchar == 2)) {
+      use_multi_locations <-
+        F
+      "You entered detailed location which cannot have multi locations\nthis analysis will still run though" %>%
+        message
+    }
+
+    if (use_multi_locations == T) {
+      mode_slug <-
+        "&MODE=multi"
+    } else {
+      mode_slug <-
+        ''
+    }
+
+    if (day_moving_average %>% is.na) {
+      ma_slug <-
+        ''
+    } else {
+      if (!day_moving_average %in% 1:5) {
+        stop("Sorry moving averages can only be 1 through 5 day")
+      } else {
+        ma_slug <-
+          "&SMOOTH=" %>% paste0(day_moving_average)
+      }
+
+    }
+
+    base_url <-
+      'http://api.gdeltproject.org/api/v1/dash_stabilitytimeline/dash_stabilitytimeline?LOC='
+
+    data_url <-
+      base_url %>% paste0(location_id,
+                          var_slug,
+                          output_slug,
+                          period_slug,
+                          ma_slug,
+                          mode_slug)
+
+    if (use_multi_locations == F) {
+      data <-
+        data_url %>%
+        read_csv() %>%
+        suppressMessages() %>%
+        set_names(c(period_name, 'value')) %>%
+        mutate(
+          item = id_var,
+          idLocation = location_id,
+          typePeriod = time_period,
+          dayMovingAverage = day_moving_average
+        ) %>%
+        dplyr::select(1,
+                      idLocation,
+                      typePeriod,
+                      dayMovingAverage,
+                      item,
+                      value)
+    } else {
+      data <-
+        data_url %>%
+        read_csv() %>%
+        suppressMessages() %>%
+        gather(idLocation, value, -Date) %>%
+        mutate(
+          item = id_var,
+          typePeriod = time_period,
+          dayMovingAverage = day_moving_average
+        ) %>%
+        dplyr::select(Date, idLocation, typePeriod, dayMovingAverage,
+                      item, value)
+
+      names(data)[1] <-
+        period_name
+    }
+
+    data <-
+      data %>%
+      left_join(
+        location_codes %>%
+          dplyr::select(
+            idLocation,
+            codeCountry,
+            codeLocation,
+            nameLocation,
+            countryLocation
+          )
+      ) %>%
+      dplyr::select(
+        1:5,
+        nameLocation,
+        countryLocation,
+        codeCountry,
+        codeLocation,
+        nameLocation,
+        countryLocation,
+        everything()
+      ) %>%
+      suppressMessages()
+
+    if (use_multi_locations == T) {
+      data <-
+        data %>%
+        dplyr::filter(!codeLocation == "00")
+    }
+
+    if (period_name == "dateData") {
+      data <-
+        data %>%
+        mutate(dateData = dateData %>% ymd)
+    } else {
+      data <-
+        data %>%
+        mutate(datetimeData = datetimeData %>% ymd_hms())
+    }
+
+    data <-
+      data %>%
+      remove_full_na_column(col_name = c("codeLocation")) %>%
+      remove_full_na_column(col_name = "dayMovingAverage")
+
+    if (return_wide) {
+      data <-
+        data %>%
+        spread(item, value)
+    }
+
+    if (return_message) {
+      locations <-
+        data$nameLocation %>% unique %>% paste0(collapse = '\n')
+      time_period <-
+        " from " %>% paste0(
+          data %>% dplyr::select(1) %>% extract2(1) %>% min,
+          ' to ',
+          data %>% dplyr::select(1) %>% extract2(1) %>% max
+        )
+      "You got GDELT " %>%
+        paste0(variable_name, ' data', time_period, ' for:\n',
+               locations) %>%
+        message()
+    }
+
+    return(data)
+
+  }
+
+
+#' Returns instability data for given locations
+#'
+#' @param location_ids Specify the location IDs
+#' @param variable_names Specify variables they can include
+#' \code{c('instability', 'conflict', 'protest', 'tone', 'relative mentions')}
+#' @param days_moving_average Specify day moving average, NA is unsmoothed
+#' @param time_periods Specified time period
+#'  \code{c('daily', '15min')}
+#' @param use_multi_locations If a country is selected do you want to select all the cities
+#' \code{c(T,F)}
+#' @param return_wide Return data in wide form
+#' @param nest_data Return data in nested form
+#' \code{c(T,F)}
+#' @param return_message Return a message
+#'
+#' @return
+#' @export
+#'
+#' @examples
+get_data_locations_instability_api <-
+  function(location_ids = c('US', 'IS', "TU"),
+           variable_names = c('instability', 'conflict', 'tone', 'protest'),
+           days_moving_average = NA,
+           time_periods = 'daily',
+           use_multi_locations = F,
+           return_wide = T,
+           nest_data = F,
+           return_message = T) {
+    get_data_location_instability_api_safe <-
+      failwith(NULL, get_data_location_instability_api)
+
+    var_matrix <-
+      expand.grid(
+        id_location = location_ids,
+        variable_name = variable_names,
+        day_moving_average = days_moving_average,
+        time_period = time_periods,
+        use_multi_locations = use_multi_locations,
+        stringsAsFactors = F
+      ) %>%
+      as_data_frame
+
+    all_data <-
+      seq_len(var_matrix %>% nrow) %>%
+      purrr::map(function(x) {
+        get_data_location_instability_api_safe(
+          location_id = var_matrix$id_location[x],
+          variable_name = var_matrix$variable_name[x],
+          day_moving_average = var_matrix$day_moving_average[x],
+          time_period = var_matrix$time_period[x],
+          use_multi_locations = var_matrix$use_multi_locations[x],
+          return_wide = F,
+          return_message = return_message
+        ) %>%
+          suppressWarnings()
+      }) %>%
+      compact %>%
+      bind_rows
+
+    if (return_wide) {
+      all_data <-
+        all_data %>%
+        spread(item, value)
+    }
+
+    if (nest_data) {
+      nest_cols <-
+        all_data %>% dplyr::select(one_of(
+          c(
+            'value',
+            'dateData',
+            'datetimeData',
+            'instability',
+            'conflict',
+            'protest',
+            'tone',
+            'artvolnorm'
+          )
+        )) %>% suppressWarnings() %>%
+        names()
+
+      all_data <-
+        all_data %>%
+        nest_(key_col = 'data', nest_cols = nest_cols) %>%
+        arrange(idLocation)
+    }
+
+    return(all_data)
   }
