@@ -4237,7 +4237,7 @@ get_data_vgkg_day <-
       stop("Sorry data can't go into the future")
     }
 
-    if (!'cb_urls' %>% exists) {
+    if (!'cv_urls' %>% exists) {
       paste(
         "To save memory and time next time you should run the function get_urls_vgkg()  and save to data frame called cv_urls"
       ) %>%
