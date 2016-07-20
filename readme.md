@@ -5,7 +5,7 @@ gdeltr2
 
 #### <strong>What is the GDELT Project?</strong>
 
-[The Global Database of Events, Language, and Tone](gdelt.org) **\[GDELT\]** is a non profit whose initiative is to:
+[The Global Database of Events, Language, and Tone](http://gdeltproject.org/) **\[GDELT\]** is a non profit whose initiative is to:
 <blockquote>
 construct a catalog of human societal-scale behavior and beliefs across all countries of the world, connecting every person, organization, location, count, theme, news source, and event across the planet into a single massive network that captures what's happening around the world, what its context is and who's involved, and how the world is feeling about it, every single day.
 </blockquote>
