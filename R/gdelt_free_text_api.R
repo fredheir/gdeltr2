@@ -1369,7 +1369,9 @@ get_data_sentiment_ft_api_terms <-
 #'
 #' @return
 #' @export
-#' @import dplyr readr tidyr
+#' @import dplyr tidyr
+#' @importFrom readr read_tsv
+#' @importFrom purrr set_names
 #' @examples
 get_codes_stability_locations <- function() {
   country_df <-
@@ -1424,7 +1426,8 @@ get_codes_stability_locations <- function() {
 #' @param col_name specified column
 #'
 #' @return
-#' @import dplyr magrittr
+#' @import dplyr
+#' @importFrom magrittr %>%
 #' @examples
 remove_full_na_column <-
   function(data, col_name = c('codeLocation')) {

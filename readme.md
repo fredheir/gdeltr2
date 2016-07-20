@@ -24,18 +24,18 @@ My main motivation for this building package is simple, **GDELT IS INCREDIBLE!!*
 
 Accessing GDELT's data gold is doable but either difficult or costly.
 
-Currently, anyone proficient in SQL can access the data via [Google Big Query](https://bigquery.cloud.google.com/dataset/gdelt-bq:gdeltv2?pli=1). The problem is that even if you want to us SQL users have to pay above a certain API call threshold and then you still need another layer of connectivity to explore the data in R.
+Currently, anyone proficient in SQL can access the data via [Google Big Query](https://bigquery.cloud.google.com/dataset/gdelt-bq:gdeltv2?pli=1). The problem is that even if you want to use SQL, users have to pay above a certain API call threshold and then you still need another layer of connectivity to explore the data in R.
 
 Although R has two existing packages that allow users to interact with portions of GDELT's data outside of Big Query:
 
 -   [gdeltr](https://github.com/ahalterman/gdeltr)
 -   [GDELTtools](https://cran.r-project.org/web/packages/GDELTtools/)
 
-These packages are old, incomplete and difficult to use and it is my hope that gdelt2r allows the R user easy access to GDELT's data allowing for faster and more exhilarating data visualizations and analysis!
+These packages are old, incomplete and difficult to use. It is my hope that `gdelt2r` allows the R user easy access to GDELT's data allowing for faster, more exhilarating data visualizations and analysis!
 
 #### <strong>PRIOR TO INSTALL</strong>
 
-This package requires the development versions of `devtools` and `dplyr` so before installation please do the following:
+This package may require the development versions of `devtools` and `dplyr` so, to be safe, before installation run the following code:
 
 ``` r
 devtools::install_github("hadley/devtools")
@@ -52,7 +52,7 @@ devtools::install_github("abresler/gdeltr2")
 
 The package currently consists of two function families, **data acquisition** and **data tidying**.
 
-The package data acquisition functions begin with `get_urls_` for acquiring data store log information, `get_codes_` for acquiring code books and `get_data_` for downloading and reading data.
+The package's data acquisition functions begin with `get_urls_` for acquiring data store log information, `get_codes_` for acquiring code books and `get_data_` for downloading and reading data.
 
 The data tidying functions begin with `parse_` and they apply to a number of the features in the **gkg** and **vgkg** data stores that will get described in further detail farther below.
 
@@ -71,11 +71,11 @@ The data tidying functions begin with `parse_` and they apply to a number of the
     -   `get_data_wordcloud_ft_api_terms()` - retrieves wordcloud data for specified terms over the last 24 hours
     -   `get_data_sentiment_ft_api_domains()` - retrieves sentiment data for specified domains over the last 24 hours
     -   `get_data_sentiment_ft_api_terms()` - retrieves sentiment data for specified terms over the last 24 hours
--   <strong>GDELT Events</strong>
+-   <strong>[GDELT Events](http://gdeltproject.org/data.html#documentation)</strong>
     -   `get_urls_gdelt_event_log()` - retrieves descriptive data and urls for all available GDELT event downloads.
     -   `get_data_gdelt_period_event_totals()` - retrieves summary event data for a given a period \[monthly, daily, yearly\]; this can be grouped by country.
     -   `get_data_gdelt_periods_event()` - retrieves GDELT event data for a specified periods. Periods are by 4 digit years from 1979 to 2005, 6 digit year month from January 2006 to March 2013, and 8 digit year month day code thereafter.
--   <strong>Global Knowledge Graph</strong>
+-   <strong>[Global Knowledge Graph](http://blog.gdeltproject.org/gdelt-2-0-our-global-world-in-realtime/)</strong>
     -   `get_urls_gkg_15_minute_log` - retrieves GKG 15 minute capture logs; data begins February 18th, 2015 for the three table types
         -   gkg: This is the full gkg data set and contains columns that may require further data tidying tying to a **GKG Record ID**
         -   export: This data replicates the output contained in the GDELT event table for processed documents tying to a **Global Event ID**
@@ -84,12 +84,15 @@ The data tidying functions begin with `parse_` and they apply to a number of the
     -   Each day contains a count file and the full gkg output.
     -   `get_data_gkg_day_summary()` retrieves GKG daily summary data for specified date(s), this captures *count files* by `is_count_file = T`
     -   `get_data_gkg_days_detailed()` - retrieves GKG data from the data cached every 15 minutes for specified date(s) for a given table. The table can be one of `c('gkg', 'export', 'mentions')`. This function may require significant bandwidth and memory given the potential file sizes.
+-   <strong>[American Television Knowledge Graph](http://blog.gdeltproject.org/announcing-the-american-television-global-knowledge-graph-tv-gkg/)
+-   `get_urls_gkg_tv_daily_summaries()` - retrieves available dates
+    -   `get_data_gkg_tv_days()` - retrieves data for specified dates. Note that the data is on a 2 day lag so the most recent data is 2 days old.
 -   <strong>[Location Sentiment API](http://blog.gdeltproject.org/announcing-the-gdelt-stability-dashboard-api-stability-timeline/)</strong>
     -   `get_codes_stability_locations()` - retrieves possible locations
     -   `get_data_locations_instability_api()` - retrieves instability data for a specified location and time period. Variables can be `c('instability', 'conflict', 'protest', 'tone', 'relative mentions')` Time periods can be `c('daily', '15 minutes')`, for `daily` the data is the average per day of the specified variable for the last 180 days and for `15 minutes` the data is the variable reading every 15 minutes for the last week.
--   <strong>Visual Global Knowledge Graph</strong>
+-   <strong>[Visual Global Knowledge Graph](http://blog.gdeltproject.org/gdelt-visual-knowledge-graph-vgkg-v1-0-available/)</strong>
     -   `get_urls_vgkg()` - retrieves VGKG log urls
-    -   `get_data_vgkg_dates()` - retrieves VGKG data from the data cached every 15 minutes for specified date(s)
+    -   `get_data_vgkg_dates()` - retrieves VGKG data from the data cached every 15 minutes for specified date(s).
 
 #### <strong>Tidying Functions</strong>
 

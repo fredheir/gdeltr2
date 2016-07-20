@@ -8,6 +8,11 @@ get_data_gkg_tv_days(dates = c("2016-06-01", "2016-02-01"),
   only_most_recent = F, return_message = T)
 }
 \arguments{
+\item{dates}{specified dates, year, month day format}
+
+\item{only_most_recent}{returns only the most recent period
+\code{c(T, F)}}
+
 \item{return_message}{}
 }
 \description{

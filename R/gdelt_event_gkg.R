@@ -5504,7 +5504,7 @@ get_data_gkg_tv_day <- function(date_data = "2016-06-01",
                                 return_message = T) {
   if (only_most_recent == T) {
     date_data <-
-      Sys.Date()
+      Sys.Date() - 2
   }
 
   if (!date_data %>% substr(5, 5) == "-") {
@@ -5575,8 +5575,9 @@ get_data_gkg_tv_day <- function(date_data = "2016-06-01",
 
 #' Gets GKG TV data for specified days
 #'
-#' @param dates
-#' @param only_most_recent
+#' @param dates specified dates, year, month day format
+#' @param only_most_recent returns only the most recent period
+#' \code{c(T, F)}
 #' @param return_message
 #'
 #' @return
