@@ -6,7 +6,7 @@
 \usage{
 
   get_data_vgkg_url(url = "http://data.gdeltproject.org/gdeltv2_cloudvision/20160606234500.imagetagsv1.csv.gz",
-  return_message = T)
+  remove_json_column = T, return_message = T)
 }
 \description{
 Gets Cloud Vision Data File

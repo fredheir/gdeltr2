@@ -5,7 +5,7 @@
 \title{Get Data CV Day}
 \usage{
 get_data_vgkg_day(date_data = "2016-06-08", include_translations = F,
-  only_most_recent = F, return_message = T)
+  remove_json_column = T, only_most_recent = F, return_message = T)
 }
 \arguments{
 \item{return_message}{}

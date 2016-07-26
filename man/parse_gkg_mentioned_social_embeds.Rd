@@ -9,9 +9,9 @@ parse_gkg_mentioned_social_embeds(gdelt_data,
   return_wide = T)
 }
 \arguments{
-\item{return_wide}{}
+\item{social_embed_column}{options \code{c('urlSocialMediaImageEmbeds', 'images', 'urlSocialMediaVideoEmbeds', 'video', 'videos'))}}
 
-\item{organization_column}{options \code{c('urlSocialMediaImageEmbeds', 'images', 'urlSocialMediaVideoEmbeds', 'video', 'videos'))}}
+\item{return_wide}{}
 }
 \description{
 Returns social embed information from a gkg data frame
