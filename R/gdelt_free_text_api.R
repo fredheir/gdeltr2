@@ -1756,3 +1756,35 @@ get_data_locations_instability_api <-
 
     return(all_data)
   }
+
+
+#' Gets most recent terms
+#'
+#' @param sort_data
+#'
+#' @return
+#' @export
+#' @import dplyr stringr
+#' @importFrom readr read_csv
+#' @examples
+get_data_ft_trending_terms <-
+  function(sort_data = T) {
+    data <-
+      'http://live.gdeltproject.org/autocomplete_last15.csv' %>%
+      read_csv %>%
+      set_names('nameTerm') %>%
+      suppressMessages()
+
+    data <-
+      data %>%
+      mutate(isGDELTTag = nameTerm %>%  grepl("[[:upper:]]+$|\\_", .),
+             datetimeData = Sys.time())
+
+    if (sort_data) {
+      data <-
+        data %>%
+        arrange(nameTerm)
+    }
+
+    return(data)
+  }

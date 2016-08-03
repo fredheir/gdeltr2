@@ -1364,8 +1364,10 @@ get_gdelt_url_data <-
           sep = '\\-',
           remove = F
         ) %>%
-        dplyr::select(-dateTime) %>%
-        dplyr::mutate(idDateTimeArticle = idDateTimeArticle %>% as.numeric) %>%
+        dplyr::select(-c(dateTime, translationInfo)) %>%
+        dplyr::mutate(idDateTimeArticle = idDateTimeArticle %>% as.numeric,
+                      domainSource = if_else(isDocumentURL == T, documentSource %>% urltools::domain, nameSource)) %>%
+        dplyr::select(idGKG:documentSource, domainSource, everything()) %>%
         suppressMessages() %>%
         suppressWarnings()
 
@@ -2333,7 +2335,7 @@ parse_gkg_mentioned_themes <- function(gdelt_data,
 #' Returns social embed information from a gkg data frame
 #'
 #' @param gdelt_data
-#' @param organization_column options \code{c('urlSocialMediaImageEmbeds', 'images', 'urlSocialMediaVideoEmbeds', 'video', 'videos'))}
+#' @param social_embed_column options \code{c('urlSocialMediaImageEmbeds', 'images', 'urlSocialMediaVideoEmbeds', 'video', 'videos'))}
 #' @param filter_na
 #' @param return_wide
 #'
@@ -3611,6 +3613,7 @@ parse_gkg_mentioned_source_data <-
 #' @param file_directory
 #' @param empty_trash
 #' @param return_message
+#' @importFrom urltools domain
 #' @return
 #'
 #' @examples
@@ -3692,6 +3695,10 @@ get_data_gkg_day_detailed <- function(date_data = "2016-06-01",
     distinct %>%
     suppressMessages() %>%
     suppressWarnings()
+
+  all_data <-
+    all_data %>%
+    mutate(domainSource = documentSource %>% urltools::domain)
 
   if (return_message == T) {
     "You retrieved " %>%
@@ -4142,7 +4149,8 @@ get_urls_vgkg_most_recent  <- function() {
   log_df <-
     log_df %>%
     mutate(item = c('urlCloudVisionTags', 'urlTranslationTags')) %>%
-    spread(item, value)
+    spread(item, value) %>%
+    mutate()
 
   return(log_df)
 }
@@ -4163,6 +4171,7 @@ get_urls_vgkg_most_recent  <- function() {
 #' @examples
 get_data_vgkg_url <-
   function(url = 'http://data.gdeltproject.org/gdeltv2_cloudvision/20160606234500.imagetagsv1.csv.gz',
+           remove_json_column = T,
            return_message = T) {
     ok_url <-
       url %>% httr::url_ok %>% suppressWarnings()
@@ -4193,6 +4202,12 @@ get_data_vgkg_url <-
       ) %>%
       dplyr::select(idVGKG, idDateTime, everything())
 
+    if (remove_json_column) {
+      cloud_vision_data <-
+        cloud_vision_data %>%
+        dplyr::select(-jsonCloudVision)
+    }
+
 
     if (return_message) {
       "Downloaded, parsed and imported " %>%
@@ -4218,6 +4233,7 @@ get_data_vgkg_url <-
 get_data_vgkg_day <-
   function(date_data = "2016-06-08",
            include_translations = F,
+           remove_json_column = T,
            only_most_recent = F,
            return_message = T) {
     if (!date_data %>% substr(5, 5) == "-") {
@@ -4271,6 +4287,7 @@ get_data_vgkg_day <-
       purrr::map(function(x) {
         get_data_vgkg_url_safe(
           url = x,
+          remove_json_column = remove_json_column,
           return_message = return_message
         )
       }) %>%
@@ -4300,7 +4317,7 @@ get_data_vgkg_day <-
 #' @param remove_files
 #' @param empty_trash
 #' @param return_message
-#'
+#' @importFrom urltools domain
 #' @return
 #' @export
 #'
@@ -4309,6 +4326,7 @@ get_data_vgkg_dates <-
   function(dates = c("2016-06-09", "2016-06-08"),
            include_translations = F,
            only_most_recent = F,
+           remove_json_column = T,
            return_message = T) {
     if (only_most_recent == T) {
       dates <-
@@ -4324,6 +4342,7 @@ get_data_vgkg_dates <-
           get_data_vgkg_day_safe(
             date_data = x,
             only_most_recent = only_most_recent,
+            remove_json_column = remove_json_column,
             return_message = return_message
           )
       ) %>%
@@ -4339,6 +4358,11 @@ get_data_vgkg_dates <-
       dplyr::select(-c(count, idDateTime, remove, VGKG)) %>%
       dplyr::select(idVGKG, everything()) %>%
       ungroup
+
+    all_data <-
+      all_data %>%
+      mutate(domainSource = documentSource %>% urltools::domain) %>%
+      dplyr::select(idVGKG:dateTimeDocument, domainSource, everything())
     return(all_data)
 
   }
@@ -5606,3 +5630,55 @@ get_data_gkg_tv_days <- function(dates = c("2016-06-01", "2016-02-01"),
 
   return(all_data)
 }
+
+
+#' Convert date columns to numeric
+#'
+#' @param data
+#' @param column_keyword Keyword of the data frame's columns to look for that signifies dates
+#' \code{c('date')}
+#' @param exclude_col_type The types of column to exclude from converting to numeric
+#' \code{c('character')}
+#' @param return_message  return a message
+#' @importFrom tibble rownames_to_column
+#' @return
+#' @export
+#'
+#' @examples
+date_columns_to_numeric <-
+  function(data,
+           column_keyword = 'date',
+           exclude_col_type = c('character'),
+           return_message = T) {
+
+    name_df <-
+      data %>%
+      dplyr::select(matches(column_keyword)) %>%
+      purrr::map(class) %>%
+      unlist %>%
+      data.frame(col_class = .) %>%
+      tibble::rownames_to_column()
+
+    exclude_cols <-
+      name_df %>%
+      dplyr::filter(col_class %in% col_type) %>%
+      .$rowname
+
+    mutate_cols <-
+      data %>%
+      dplyr::select(matches(column_keyword)) %>%
+      dplyr::select(-one_of(exclude_cols)) %>% names
+
+    data <-
+      data %>%
+      mutate_at(mutate_cols, as.numeric)
+
+    if (return_message) {
+      "You convereted " %>%
+        paste0(paste0(mutate_cols, collapse = ', '), ' to numeric') %>%
+        message()
+    }
+
+    return(data)
+
+  }
