@@ -5864,20 +5864,6 @@ get_urls_gkg_tv_daily_summaries <-
     return(urlData)
   }
 
-
-#' Gets TV data from a URL
-#'
-#' @param url
-#' @param return_message
-#' @return
-#' @importFrom httr url_ok
-#' @import stringr
-#' @importFrom purrr flatten_chr
-#' @importFrom curl curl_download
-#' @importFrom readr read_tsv
-#' @importFrom lubridate ymd_hms
-#' @importFrom lubridate with_tz
-#' @examples
 get_data_gkg_tv <-
   function(url = 'http://data.gdeltproject.org/gdeltv2_iatelevision/20160609.gkg.csv.gz',
            return_message = T) {
