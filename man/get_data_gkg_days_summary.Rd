@@ -5,7 +5,7 @@
 \title{Gets days summary GDELT GKG data by table}
 \usage{
 get_data_gkg_days_summary(dates = c("2016-06-01"), is_count_file = c(T, F),
-  file_directory = "Desktop/temp_gdelt_data", remove_files = T,
+  file_directory = NULL, folder_name = "gdelt_data", remove_files = T,
   empty_trash = T, nest_data = F, return_message = T)
 }
 \arguments{

@@ -517,88 +517,90 @@ get_codes_gkg_themes <- function(split_word_bank_codes = F) {
 #' @examples
 #' get_data_gdelt_period_event_totals(period = 'monthly', by_country = T)
 
-get_data_gdelt_period_event_totals <- function(period = 'yearly',
-                                               by_country = T,
-                                               return_message = T) {
-  periods <-
-    c('daily', 'monthly', 'yearly')
-  if (!period %in% periods) {
-    "Sorry periods can only be:\n" %>%
-      stop(paste0(paste0(periods, collapse = '\n')))
-  }
+get_data_gdelt_period_event_totals <-
+  function(period = 'yearly',
+           by_country = T,
+           return_message = T) {
+    periods <-
+      c('daily', 'monthly', 'yearly')
+    if (!period %in% periods) {
+      "Sorry periods can only be:\n" %>%
+        stop(paste0(paste0(periods, collapse = '\n')))
+    }
 
-  if (by_country == T) {
-    period_slug <-
-      period %>%
-      paste0('_country.csv')
-  } else {
-    period_slug <-
-      period %>%
-      paste0('.csv')
-  }
-  base <-
-    'http://data.gdeltproject.org/normfiles/'
+    if (by_country == T) {
+      period_slug <-
+        period %>%
+        paste0('_country.csv')
+    } else {
+      period_slug <-
+        period %>%
+        paste0('.csv')
+    }
+    base <-
+      'http://data.gdeltproject.org/normfiles/'
 
-  url_data <-
-    base %>%
-    paste0(period_slug)
+    url_data <-
+      base %>%
+      paste0(period_slug)
 
-  period_data <-
-    url_data %>%
-    read_csv(col_names = F) %>%
-    suppressWarnings()
+    period_data <-
+      url_data %>%
+      read_csv(col_names = F) %>%
+      suppressWarnings() %>%
+      suppressMessages()
 
-  if (by_country == T) {
-    names(period_data) <-
-      c('idDate', 'idCountry', 'countEvents')
-  } else {
-    names(period_data) <-
-      c('idDate', 'countEvents')
-  }
+    if (by_country == T) {
+      names(period_data) <-
+        c('idDate', 'idCountry', 'countEvents')
+    } else {
+      names(period_data) <-
+        c('idDate', 'countEvents')
+    }
 
-  period_data <-
-    period_data %>%
-    mutate(periodData = period, isByCountry = by_country)
-
-  if (period == 'daily') {
     period_data <-
       period_data %>%
-      mutate(dateData = idDate %>% ymd %>% as.Date()) %>%
-      dplyr::select(periodData, isByCountry, dateData, everything())
+      mutate(periodData = period, isByCountry = by_country)
+
+    if (period == 'daily') {
+      period_data <-
+        period_data %>%
+        mutate(dateData = idDate %>% ymd %>% as.Date()) %>%
+        dplyr::select(periodData, isByCountry, dateData, everything())
+    }
+
+    if (period == 'monthly') {
+      period_data <-
+        period_data %>%
+        mutate(year.month = idDate) %>%
+        dplyr::select(periodData, isByCountry, year.month, everything())
+    }
+
+    if (period == 'yearly') {
+      period_data <-
+        period_data %>%
+        mutate(yearData = idDate) %>%
+        dplyr::select(periodData, isByCountry, everything())
+    }
+
+    if (return_message == T)  {
+      from_date <-
+        period_data$idDate %>% min
+
+      to_date <-
+        period_data$idDate %>% max
+
+      total_events <-
+        period_data$countEvents %>% sum() / 1000000
+      events_slug <-
+        total_events %>% paste0(" million GDELT events from ")
+      "There have been " %>%
+        paste0(events_slug, from_date,
+               ' to ', to_date) %>%
+        message
+    }
+    return(period_data)
   }
-
-  if (period == 'monthly') {
-    period_data <-
-      period_data %>%
-      mutate(year.month = idDate) %>%
-      dplyr::select(periodData, isByCountry, year.month, everything())
-  }
-
-  if (period == 'yearly') {
-    period_data <-
-      period_data %>%
-      mutate(yearData = idDate) %>%
-      dplyr::select(periodData, isByCountry, everything())
-  }
-
-  if (return_message == T)  {
-    from_date <-
-      period_data$idDate %>% min
-
-    to_date <-
-      period_data$idDate %>% max
-
-    total_events <-
-      period_data$countEvents %>% sum() / 1000000
-    events_slug <-
-      total_events %>% paste0(" million GDELT events from ")
-    "There have been " %>%
-      paste0(events_slug, from_date,
-             ' to ', to_date) %>%
-      message
-  }
-  return(period_data)
-}
 
 
 #' Retrieves GDELT event database schema
@@ -881,8 +883,6 @@ get_schema_gkg_counts <- function() {
   return(counts_schema)
 }
 
-
-
 #' Gets gkg mention schema
 #'
 #' @return
@@ -935,454 +935,870 @@ get_schema_gkg_mentions <- function() {
   return(mentions_schema)
 }
 
-#' Retrieves GDELT Event or GKG data from a given URL
+#' Title
 #'
 #' @param url
 #' @param file_directory
+#' @param folder_name
+#' @param remove_existing_folder
 #' @param remove_files
 #' @param empty_trash
 #' @param return_message
-#' @importFrom purrr flatten_chr
-#' @importFrom tidyr extract_numeric
-#' @importFrom purrr compact
-#' @import dplyr
-#' @import utils
-#' @importFrom urltools domain
-#' @importFrom curl curl_download curl
+#'
 #' @return
+#' @export
 #'
 #' @examples
-#' get_gdelt_url_data(url = "http://data.gdeltproject.org/gdeltv2/20160531000000.gkg.csv.zip", file_directory = 'Desktop/temp_gdelt_data', remove_files = T, empty_trash = T, return_message = T)
 get_gdelt_url_data <-
   function(url = "http://data.gdeltproject.org/gdeltv2/20160531000000.gkg.csv.zip",
-           file_directory = 'Desktop/temp_gdelt_data',
+           file_directory = NULL,
+           folder_name = 'gdelt_data',
+           remove_existing_folder = T,
            remove_files = T,
            empty_trash = T,
            return_message = T) {
-    files <-
+    use_tmp_file <-
+      file_directory %>% is_null
+
+    if (use_tmp_file) {
+      tmp <-
+        tempfile()
+
       url %>%
-      str_replace_all(
-        'http://data.gdeltproject.org/gdeltv2/|http://data.gdeltproject.org/gkg/|http://data.gdeltproject.org/events/|http://data.gdeltproject.org/gdeltv2_cloudvision/',
-        ''
-      ) %>%
-      str_split('\\.') %>%
-      flatten_chr
+        curl::curl_download(url = ., tmp)
 
-    file_name <-
-      files %>%
-      .[1] %>%
-      paste0(".zip")
+      con <-
+        unzip(tmp)
 
-    file_type <-
-      files %>%
-      .[2]
-
-    temp.dir <-
-      file_directory
-
-    file_path <-
-      temp.dir %>% str_split('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
-
-    if (!dir.exists(paths = file_path)) {
-      dir.create(temp.dir)
-    }
-
-    file <-
-      temp.dir %>%
-      paste0('/', file_name)
-
-    url %>%
-      curl_download(url = ., destfile = file)
-
-    file %>%
-      unzip(exdir = paste0(temp.dir, '/'))
-
-    dir_files <-
-      temp.dir %>%
-      list.files()
-
-    csv_file_loc <-
-      dir_files[dir_files %>%
-                  str_detect(".csv|.CSV")] %>%
-      paste0(temp.dir, '/', .)
-
-    gdelt_cols <-
-      csv_file_loc %>%
-      read_tsv(col_names = F,
-               n_max = 1) %>% ncol %>% suppressWarnings() %>% extract_numeric()
-
-
-    if (gdelt_cols == 16) {
-      gdelt_data <-
-        csv_file_loc %>%
-        read_tsv(col_names = F) %>%
-        suppressWarnings()
-
-      names(gdelt_data) <-
-        get_schema_gkg_mentions() %>% .$nameActual
-
-      gdelt_data <-
-        gdelt_data %>%
-        mutate(
-          dateTimeEvent = dateEvent %>% ymd_hms %>% with_tz(Sys.timezone()),
-          dateEvent = dateTimeEvent %>% as.Date(),
-          dateTimeMention = dateMention %>% ymd_hms %>% with_tz(Sys.timezone()),
-          dateMention = dateTimeMention %>% as.Date()
-        ) %>%
-        dplyr::select(idGlobalEvent,
-                      dateTimeEvent,
-                      dateTimeMention,
-                      everything()) %>%
-        dplyr::left_join(data_frame(
-          idMentionType = 1:6,
-          mention_type = c('web', 'citation', 'core', 'dtic', 'jstor', 'nontext')
-        )) %>%
-        dplyr::select(idGlobalEvent:idMentionType,
-                      mention_type,
-                      everything()) %>%
-        suppressMessages()
-
-      gdelt_data <-
-        gdelt_data %>%
-        mutate_each_(funs(as.logical(.)),
-                     gdelt_data %>% dplyr::select(matches("is")) %>% names)
-
-    }
-
-    if (gdelt_cols == 15) {
-      gdelt_data <-
-        csv_file_loc %>%
-        read_tsv(col_names = T) %>%
-        suppressWarnings()
-
-      names(gdelt_data) <-
-        get_schema_gkg_counts() %>% .$nameActual
-
-      gdelt_data <-
-        gdelt_data %>%
-        dplyr::left_join(data_frame(
-          idTypeLocation = 1:5,
-          typeLocation = c('country',
-                           'usState',
-                           'usCity',
-                           'worldCity',
-                           'worldState')
-        )) %>%
+      gdelt_cols <-
+        con %>%
+        read_tsv(col_names = F,
+                 n_max = 1) %>% ncol %>%
         suppressMessages() %>%
-        dplyr::mutate(
-          idRecord = 1:n(),
-          idGKG = dateEvent %>% paste0('.', idRecord),
-          urlSources = urlSources %>% str_replace_all("<UDIV>", ';')
-        ) %>%
-        dplyr::mutate(dateEvent = dateEvent %>% ymd()) %>%
-        dplyr::select(dateEvent:idTypeLocation, typeLocation, everything()) %>%
-        dplyr::select(idRecord, idGKG, everything())
-    }
+        readr::parse_number
 
-    if (gdelt_cols == 61) {
-      gdelt_data <-
-        csv_file_loc %>%
-        readr::read_tsv(col_names = F) %>%
-        suppressWarnings()
 
-      names(gdelt_data) <-
-        get_schema_gdelt_events() %>% .$nameActual
+      if (gdelt_cols == 16) {
+        gdelt_data <-
+          con %>%
+          read_tsv(col_names = F) %>%
+          suppressWarnings()
 
-      gdelt_data <-
-        gdelt_data %>%
-        dplyr::rename(dateTimeDocument = dateTimeDataAdded) %>%
-        dplyr::mutate(
-          dateEvent = dateEvent %>% lubridate::ymd,
-          dateTimeDocument = dateTimeDocument %>% ymd_hms() %>% with_tz(Sys.timezone()),
-          nameSource = urlSource %>% domain() %>% str_replace_all("www.", '')
-        )
+        names(gdelt_data) <-
+          get_schema_gkg_mentions() %>% .$nameActual
 
-      gdelt_data <-
-        gdelt_data %>%
-        dplyr::mutate_each_(funs(as.logical(.)),
-                            gdelt_data %>% dplyr::select(matches("is")) %>% names)
+        gdelt_data <-
+          gdelt_data %>%
+          mutate(
+            dateTimeEvent = dateEvent %>% ymd_hms %>% lubridate::with_tz(Sys.timezone()),
+            dateEvent = dateTimeEvent %>% as.Date(),
+            dateTimeMention = dateMention %>% ymd_hms %>% lubridate::with_tz(Sys.timezone()),
+            dateMention = dateTimeMention %>% as.Date()
+          ) %>%
+          dplyr::select(idGlobalEvent,
+                        dateTimeEvent,
+                        dateTimeMention,
+                        everything()) %>%
+          dplyr::left_join(data_frame(
+            idMentionType = 1:6,
+            mention_type = c('web', 'citation', 'core', 'dtic', 'jstor', 'nontext')
+          )) %>%
+          dplyr::select(idGlobalEvent:idMentionType,
+                        mention_type,
+                        everything()) %>%
+          suppressMessages()
 
-      gdelt_data <-
-        gdelt_data %>%
-        dplyr::left_join(data_frame(
-          classQuad =  1:4,
-          nameQuad =  c(
-            'Verbal Cooperation',
-            'Material Cooperation',
-            'Verbal Conflict',
-            'Material Conflict'
-          )
-        )) %>%
-        suppressMessages()
-    }
+        gdelt_data <-
+          gdelt_data %>%
+          mutate_each_(funs(as.logical(.)),
+                       gdelt_data %>% dplyr::select(matches("is")) %>% names)
 
-    if (gdelt_cols == 57) {
-      gdelt_data <-
-        csv_file_loc %>%
-        readr::read_tsv(col_names = F) %>%
-        suppressWarnings()
-
-      names(gdelt_data) <-
-        c(
-          "idGlobalEvent",
-          "dateEvent",
-          "monthYearEvent",
-          "yearEvent",
-          "dateFraction",
-          "codeActor1",
-          "nameActor1",
-          "codeISOActor1",
-          "codeCAMEOGroupActor1",
-          "codeCAMEOEthnicityActor1",
-          "codeCAMEOReligionActor1",
-          "codeCAMEOReligion2Actor1",
-          "codeCAMEOTypeActor1",
-          "codeCAMEOType2Actor1",
-          "codeCAMEOType3Actor1",
-          "codeActor2",
-          "nameActor2",
-          "codeISOActor2",
-          "codeCAMEOGroupActor2",
-          "codeCAMEOEthnicityActor2",
-          "codeCAMEOReligionActor2",
-          "codeCAMEOReligion2Actor2",
-          "codeCAMEOTypeActor2",
-          "codeCAMEOType2Actor2",
-          "codeCAMEOType3Actor.3",
-          "isRootEvent",
-          "codeEvent",
-          "codeEventBase",
-          "codeEventRoot",
-          "classQuad",
-          "scoreGoldstein",
-          "countMentions",
-          "countSources",
-          "countArticles",
-          "avgTone",
-          "idTypeLocationActor1",
-          "locationActor1",
-          "idCountryActor1",
-          "idADM1CodeActor1",
-          "latitudeActor1",
-          "longitudeActor1",
-          "idFeatureActor1",
-          "idTypeLocationActor2",
-          "locationActor2",
-          "idCountryActor2",
-          "idADM1CodeActor2",
-          "latitudeActor2",
-          "longitudeActor2",
-          "idFeatureActor2",
-          "idTypeLocationAction",
-          "locationAction",
-          "idCountryAction",
-          "idADM1CodeAction",
-          "latitudeAction",
-          "longitudeAction",
-          "idFeatureAction",
-          "dateAdded"
-        )
-
-      gdelt_data <-
-        gdelt_data %>%
-        dplyr::rename(dateDocument = dateAdded) %>%
-        dplyr::mutate(dateEvent = dateEvent %>% lubridate::ymd,
-                      dateDocument = dateDocument %>% lubridate::ymd) %>%
-        suppressWarnings()
-
-      gdelt_data <-
-        gdelt_data %>%
-        dplyr::mutate_each_(funs(as.logical(.)),
-                            gdelt_data %>% dplyr::select(matches("is")) %>% names)
-
-      gdelt_data <-
-        gdelt_data %>%
-        dplyr::left_join(data_frame(
-          classQuad =  1:4,
-          nameQuad =  c(
-            'Verbal Cooperation',
-            'Material Cooperation',
-            'Verbal Conflict',
-            'Material Conflict'
-          )
-        )) %>%
-        suppressMessages()
-    }
-
-    if (gdelt_cols == 58) {
-      load_needed_packages(c('urltools'))
-      gdelt_data <-
-        csv_file_loc %>%
-        readr::read_tsv(col_names = F) %>%
-        suppressWarnings()
-      names(gdelt_data) <-
-        c(
-          "idGlobalEvent",
-          "dateEvent",
-          "monthYearEvent",
-          "yearEvent",
-          "dateFraction",
-          "codeActor1",
-          "nameActor1",
-          "codeISOActor1",
-          "codeCAMEOGroupActor1",
-          "codeCAMEOEthnicityActor1",
-          "codeCAMEOReligionActor1",
-          "codeCAMEOReligion2Actor1",
-          "codeCAMEOTypeActor1",
-          "codeCAMEOType2Actor1",
-          "codeCAMEOType3Actor1",
-          "codeActor2",
-          "nameActor2",
-          "codeISOActor2",
-          "codeCAMEOGroupActor2",
-          "codeCAMEOEthnicityActor2",
-          "codeCAMEOReligionActor2",
-          "codeCAMEOReligion2Actor2",
-          "codeCAMEOTypeActor2",
-          "codeCAMEOType2Actor2",
-          "codeCAMEOType3Actor.3",
-          "isRootEvent",
-          "codeEvent",
-          "codeEventBase",
-          "codeEventRoot",
-          "classQuad",
-          "scoreGoldstein",
-          "countMentions",
-          "countSources",
-          "countArticles",
-          "avgTone",
-          "idTypeLocationActor1",
-          "locationActor1",
-          "idCountryActor1",
-          "idADM1CodeActor1",
-          "latitudeActor1",
-          "longitudeActor1",
-          "idFeatureActor1",
-          "idTypeLocationActor2",
-          "locationActor2",
-          "idCountryActor2",
-          "idADM1CodeActor2",
-          "latitudeActor2",
-          "longitudeActor2",
-          "idFeatureActor2",
-          "idTypeLocationAction",
-          "locationAction",
-          "idCountryAction",
-          "idADM1CodeAction",
-          "latitudeAction",
-          "longitudeAction",
-          "idFeatureAction",
-          "dateAdded",
-          "urlSource"
-        )
-
-      gdelt_data <-
-        gdelt_data %>%
-        dplyr::rename(dateTimeDocument = dateAdded) %>%
-        dplyr::mutate(
-          dateEvent = dateEvent %>% lubridate::ymd,
-          dateTimeDocument %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone()),
-          dateDocument = dateTimeDocument %>% as.Date(),
-          nameSource = urlSource %>% domain() %>% str_replace_all("www.", '')
-        ) %>%
-        suppressWarnings()
-
-      gdelt_data <-
-        gdelt_data %>%
-        dplyr::mutate_each_(funs(as.logical(.)),
-                            gdelt_data %>% dplyr::select(matches("is")) %>% names)
-
-      gdelt_data <-
-        gdelt_data %>%
-        dplyr::left_join(data_frame(
-          classQuad =  1:4,
-          nameQuad =  c(
-            'Verbal Cooperation',
-            'Material Cooperation',
-            'Verbal Conflict',
-            'Material Conflict.'
-          )
-        )) %>%
-        suppressMessages()
-
-    }
-
-    if (gdelt_cols == 11) {
-      gdelt_data <-
-        csv_file_loc %>%
-        readr::read_tsv(col_names = T) %>%
-        suppressWarnings()
-
-      schema_df <-
-        get_schema_gkg_general()
-
-      names(gdelt_data) <-
-        schema_df$nameActual[names(gdelt_data) %>% match(schema_df$nameGDELT)]
-
-      names(gdelt_data)[1] <-
-        c('date')
-
-      gdelt_data <-
-        gdelt_data %>%
-        dplyr::mutate(
-          idRecord = 1:n(),
-          idGKG = date %>% paste0('.', idRecord),
-          date = date %>% lubridate::ymd(),
-          urlSources = urlSources %>% str_replace_all("<UDIV>", ';')
-        ) %>%
-        dplyr::select(idRecord, idGKG, everything())
-
-    }
-
-    if (gdelt_cols == 27) {
-      gdelt_data <-
-        csv_file_loc %>%
-        readr::read_tsv(col_names = F) %>%
-        suppressWarnings()
-
-      schema_df <-
-        get_schema_gkg_general()
-
-      names(gdelt_data) <-
-        schema_df$nameActual[1:27]
-
-      gdelt_data <-
-        gdelt_data %>%
-        dplyr::mutate(
-          idSourceCollectionIdentifier = idSourceCollectionIdentifier %>% as.numeric(),
-          isDocumentURL = ifelse(documentSource %>% str_detect('http'), T, F)
-        ) %>%
-        dplyr::select(idGKG:idSourceCollectionIdentifier,
-                      isDocumentURL,
-                      everything()) %>%
-        dplyr::rename(dateTimeDocument = dateDocument) %>%
-        dplyr::mutate(dateTimeDocument = dateTimeDocument %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone())) %>%
-        separate(
-          idGKG,
-          into = c('dateTime', 'idDateTimeArticle'),
-          sep = '\\-',
-          remove = F
-        ) %>%
-        dplyr::select(-c(dateTime, translationInfo)) %>%
-        dplyr::mutate(idDateTimeArticle = idDateTimeArticle %>% as.numeric,
-                      domainSource = if_else(isDocumentURL == T, documentSource %>% urltools::domain, nameSource)) %>%
-        dplyr::select(idGKG:documentSource, domainSource, everything()) %>%
-        suppressMessages() %>%
-        suppressWarnings()
-
-    }
-
-    if (remove_files == T) {
-      "rm -R " %>%
-        paste0(temp.dir) %>%
-        system()
-      if (empty_trash == T) {
-        system('rm -rf ~/.Trash/*')
       }
+
+      if (gdelt_cols == 15) {
+        gdelt_data <-
+          con %>%
+          read_tsv(col_names = T) %>%
+          suppressWarnings()
+
+        names(gdelt_data) <-
+          get_schema_gkg_counts() %>% .$nameActual
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::left_join(data_frame(
+            idTypeLocation = 1:5,
+            typeLocation = c(
+              'country',
+              'usState',
+              'usCity',
+              'worldCity',
+              'worldState'
+            )
+          )) %>%
+          suppressMessages() %>%
+          dplyr::mutate(
+            idRecord = 1:n(),
+            idGKG = dateEvent %>% paste0('.', idRecord),
+            urlSources = urlSources %>% str_replace_all("<UDIV>", ';')
+          ) %>%
+          dplyr::mutate(dateEvent = dateEvent %>% ymd()) %>%
+          dplyr::select(dateEvent:idTypeLocation, typeLocation, everything()) %>%
+          dplyr::select(idRecord, idGKG, everything())
+      }
+
+      if (gdelt_cols == 61) {
+        gdelt_data <-
+          con %>%
+          readr::read_tsv(col_names = F) %>%
+          suppressWarnings()
+
+        names(gdelt_data) <-
+          get_schema_gdelt_events() %>% .$nameActual
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::rename(dateTimeDocument = dateTimeDataAdded) %>%
+          dplyr::mutate(
+            dateEvent = dateEvent %>% lubridate::ymd,
+            dateTimeDocument = dateTimeDocument %>% ymd_hms() %>% lubridate::with_tz(Sys.timezone()),
+            nameSource = urlSource %>% domain() %>% str_replace_all("www.", '')
+          )
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::mutate_each_(funs(as.logical(.)),
+                              gdelt_data %>% dplyr::select(matches("is")) %>% names)
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::left_join(data_frame(
+            classQuad =  1:4,
+            nameQuad =  c(
+              'Verbal Cooperation',
+              'Material Cooperation',
+              'Verbal Conflict',
+              'Material Conflict'
+            )
+          )) %>%
+          suppressMessages()
+      }
+
+      if (gdelt_cols == 57) {
+        gdelt_data <-
+          con %>%
+          readr::read_tsv(col_names = F) %>%
+          suppressWarnings()
+
+        names(gdelt_data) <-
+          c(
+            "idGlobalEvent",
+            "dateEvent",
+            "monthYearEvent",
+            "yearEvent",
+            "dateFraction",
+            "codeActor1",
+            "nameActor1",
+            "codeISOActor1",
+            "codeCAMEOGroupActor1",
+            "codeCAMEOEthnicityActor1",
+            "codeCAMEOReligionActor1",
+            "codeCAMEOReligion2Actor1",
+            "codeCAMEOTypeActor1",
+            "codeCAMEOType2Actor1",
+            "codeCAMEOType3Actor1",
+            "codeActor2",
+            "nameActor2",
+            "codeISOActor2",
+            "codeCAMEOGroupActor2",
+            "codeCAMEOEthnicityActor2",
+            "codeCAMEOReligionActor2",
+            "codeCAMEOReligion2Actor2",
+            "codeCAMEOTypeActor2",
+            "codeCAMEOType2Actor2",
+            "codeCAMEOType3Actor.3",
+            "isRootEvent",
+            "codeEvent",
+            "codeEventBase",
+            "codeEventRoot",
+            "classQuad",
+            "scoreGoldstein",
+            "countMentions",
+            "countSources",
+            "countArticles",
+            "avgTone",
+            "idTypeLocationActor1",
+            "locationActor1",
+            "idCountryActor1",
+            "idADM1CodeActor1",
+            "latitudeActor1",
+            "longitudeActor1",
+            "idFeatureActor1",
+            "idTypeLocationActor2",
+            "locationActor2",
+            "idCountryActor2",
+            "idADM1CodeActor2",
+            "latitudeActor2",
+            "longitudeActor2",
+            "idFeatureActor2",
+            "idTypeLocationAction",
+            "locationAction",
+            "idCountryAction",
+            "idADM1CodeAction",
+            "latitudeAction",
+            "longitudeAction",
+            "idFeatureAction",
+            "dateAdded"
+          )
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::rename(dateDocument = dateAdded) %>%
+          dplyr::mutate(
+            dateEvent = dateEvent %>% lubridate::ymd,
+            dateDocument = dateDocument %>% lubridate::ymd
+          ) %>%
+          suppressWarnings()
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::mutate_each_(funs(as.logical(.)),
+                              gdelt_data %>% dplyr::select(matches("is")) %>% names)
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::left_join(data_frame(
+            classQuad =  1:4,
+            nameQuad =  c(
+              'Verbal Cooperation',
+              'Material Cooperation',
+              'Verbal Conflict',
+              'Material Conflict'
+            )
+          )) %>%
+          suppressMessages()
+      }
+
+      if (gdelt_cols == 58) {
+        load_needed_packages(c('urltools'))
+        gdelt_data <-
+          con %>%
+          readr::read_tsv(col_names = F) %>%
+          suppressWarnings()
+        names(gdelt_data) <-
+          c(
+            "idGlobalEvent",
+            "dateEvent",
+            "monthYearEvent",
+            "yearEvent",
+            "dateFraction",
+            "codeActor1",
+            "nameActor1",
+            "codeISOActor1",
+            "codeCAMEOGroupActor1",
+            "codeCAMEOEthnicityActor1",
+            "codeCAMEOReligionActor1",
+            "codeCAMEOReligion2Actor1",
+            "codeCAMEOTypeActor1",
+            "codeCAMEOType2Actor1",
+            "codeCAMEOType3Actor1",
+            "codeActor2",
+            "nameActor2",
+            "codeISOActor2",
+            "codeCAMEOGroupActor2",
+            "codeCAMEOEthnicityActor2",
+            "codeCAMEOReligionActor2",
+            "codeCAMEOReligion2Actor2",
+            "codeCAMEOTypeActor2",
+            "codeCAMEOType2Actor2",
+            "codeCAMEOType3Actor.3",
+            "isRootEvent",
+            "codeEvent",
+            "codeEventBase",
+            "codeEventRoot",
+            "classQuad",
+            "scoreGoldstein",
+            "countMentions",
+            "countSources",
+            "countArticles",
+            "avgTone",
+            "idTypeLocationActor1",
+            "locationActor1",
+            "idCountryActor1",
+            "idADM1CodeActor1",
+            "latitudeActor1",
+            "longitudeActor1",
+            "idFeatureActor1",
+            "idTypeLocationActor2",
+            "locationActor2",
+            "idCountryActor2",
+            "idADM1CodeActor2",
+            "latitudeActor2",
+            "longitudeActor2",
+            "idFeatureActor2",
+            "idTypeLocationAction",
+            "locationAction",
+            "idCountryAction",
+            "idADM1CodeAction",
+            "latitudeAction",
+            "longitudeAction",
+            "idFeatureAction",
+            "dateAdded",
+            "urlSource"
+          )
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::rename(dateTimeDocument = dateAdded) %>%
+          dplyr::mutate(
+            dateEvent = dateEvent %>% lubridate::ymd,
+            dateTimeDocument %>% lubridate::ymd_hms() %>% lubridate::with_tz(Sys.timezone()),
+            dateDocument = dateTimeDocument %>% as.Date(),
+            nameSource = urlSource %>% domain() %>% str_replace_all("www.", '')
+          ) %>%
+          suppressWarnings()
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::mutate_each_(funs(as.logical(.)),
+                              gdelt_data %>% dplyr::select(matches("is")) %>% names)
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::left_join(data_frame(
+            classQuad =  1:4,
+            nameQuad =  c(
+              'Verbal Cooperation',
+              'Material Cooperation',
+              'Verbal Conflict',
+              'Material Conflict.'
+            )
+          )) %>%
+          suppressMessages()
+
+      }
+
+      if (gdelt_cols == 11) {
+        gdelt_data <-
+          con %>%
+          readr::read_tsv(col_names = T) %>%
+          suppressWarnings()
+
+        schema_df <-
+          get_schema_gkg_general()
+
+        names(gdelt_data) <-
+          schema_df$nameActual[names(gdelt_data) %>% match(schema_df$nameGDELT)]
+
+        names(gdelt_data)[1] <-
+          c('date')
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::mutate(
+            idRecord = 1:n(),
+            idGKG = date %>% paste0('.', idRecord),
+            date = date %>% lubridate::ymd(),
+            urlSources = urlSources %>% str_replace_all("<UDIV>", ';')
+          ) %>%
+          dplyr::select(idRecord, idGKG, everything())
+
+      }
+
+      if (gdelt_cols == 27) {
+        gdelt_data <-
+          con %>%
+          readr::read_tsv(col_names = F) %>%
+          suppressWarnings()
+
+        schema_df <-
+          get_schema_gkg_general()
+
+        names(gdelt_data) <-
+          schema_df$nameActual[1:27]
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::mutate(
+            idSourceCollectionIdentifier = idSourceCollectionIdentifier %>% as.numeric(),
+            isDocumentURL = ifelse(documentSource %>% str_detect('http'), T, F)
+          ) %>%
+          dplyr::select(idGKG:idSourceCollectionIdentifier,
+                        isDocumentURL,
+                        everything()) %>%
+          dplyr::rename(dateTimeDocument = dateDocument) %>%
+          dplyr::mutate(
+            dateTimeDocument = dateTimeDocument %>% lubridate::ymd_hms() %>% lubridate::with_tz(Sys.timezone())
+          ) %>%
+          separate(
+            idGKG,
+            into = c('dateTime', 'idDateTimeArticle'),
+            sep = '\\-',
+            remove = F
+          ) %>%
+          dplyr::select(-c(dateTime, translationInfo)) %>%
+          dplyr::mutate(
+            idDateTimeArticle = idDateTimeArticle %>% as.numeric,
+            domainSource = if_else(
+              isDocumentURL == T,
+              documentSource %>% urltools::domain,
+              nameSource
+            )
+          ) %>%
+          dplyr::select(idGKG:documentSource, domainSource, everything()) %>%
+          suppressMessages() %>%
+          suppressWarnings()
+
+      }
+      con %>%
+        unlink
+    }  else {
+      only_folder <-
+        !folder_name %>% is_null & file_directory %>% is_null
+      if (only_folder) {
+        file_directory <-
+          getwd()
+      }
+      file_directory <-
+        file_directory %>%
+        paste0('/', folder_name)
+
+      file <-
+        url %>% basename()
+
+      temp.dir <-
+        file_directory
+
+      file_path <-
+        temp.dir %>% str_split('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
+      if (remove_existing_folder) {
+        if (dir.exists(paths = file_path)) {
+          "rm -R " %>%
+            paste0(temp.dir) %>%
+            system()
+          if (empty_trash == T) {
+            system('rm -rf ~/.Trash/*')
+          }
+        }
+      }
+
+      if (!dir.exists(paths = file_path)) {
+        dir.create(temp.dir)
+      }
+
+      file <-
+        temp.dir %>%
+        paste0('/', file)
+
+      url %>%
+        curl_download(url = ., destfile = file)
+
+      file %>%
+        unzip(exdir = paste0(temp.dir, '/'))
+
+      dir_files <-
+        temp.dir %>%
+        list.files()
+
+      file_name <-
+        dir_files %>%
+        str_detect('CSV|csv|TXT|txt|XLS|XLSX|xlsx|xls') %>%
+        dir_files[.]
+
+      csv_file_loc <-
+        file_name[!file_name %>% str_detect("zip")] %>%
+        paste0(file_directory, '/', .)
+
+      gdelt_cols <-
+        csv_file_loc %>%
+        read_tsv(col_names = F,
+                 n_max = 1) %>% ncol %>% suppressWarnings() %>%
+        readr::parse_number() %>%
+        suppressMessages()
+
+      if (gdelt_cols == 16) {
+        gdelt_data <-
+          csv_file_loc %>%
+          read_tsv(col_names = F) %>%
+          suppressWarnings() %>%
+          suppressMessages()
+
+        names(gdelt_data) <-
+          get_schema_gkg_mentions() %>% .$nameActual
+
+        gdelt_data <-
+          gdelt_data %>%
+          mutate(
+            dateTimeEvent = dateEvent %>% ymd_hms %>% with_tz(Sys.timezone()),
+            dateEvent = dateTimeEvent %>% as.Date(),
+            dateTimeMention = dateMention %>% ymd_hms %>% with_tz(Sys.timezone()),
+            dateMention = dateTimeMention %>% as.Date()
+          ) %>%
+          dplyr::select(idGlobalEvent,
+                        dateTimeEvent,
+                        dateTimeMention,
+                        everything()) %>%
+          dplyr::left_join(data_frame(
+            idMentionType = 1:6,
+            mention_type = c('web', 'citation', 'core', 'dtic', 'jstor', 'nontext')
+          )) %>%
+          dplyr::select(idGlobalEvent:idMentionType,
+                        mention_type,
+                        everything()) %>%
+          suppressMessages()
+
+        gdelt_data <-
+          gdelt_data %>%
+          mutate_each_(funs(as.logical(.)),
+                       gdelt_data %>% dplyr::select(matches("is")) %>% names)
+
+      }
+
+      if (gdelt_cols == 15) {
+        gdelt_data <-
+          csv_file_loc %>%
+          read_tsv(col_names = T) %>%
+          suppressWarnings()
+
+        names(gdelt_data) <-
+          get_schema_gkg_counts() %>% .$nameActual
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::left_join(data_frame(
+            idTypeLocation = 1:5,
+            typeLocation = c(
+              'country',
+              'usState',
+              'usCity',
+              'worldCity',
+              'worldState'
+            )
+          )) %>%
+          suppressMessages() %>%
+          dplyr::mutate(
+            idRecord = 1:n(),
+            idGKG = dateEvent %>% paste0('.', idRecord),
+            urlSources = urlSources %>% str_replace_all("<UDIV>", ';')
+          ) %>%
+          dplyr::mutate(dateEvent = dateEvent %>% ymd()) %>%
+          dplyr::select(dateEvent:idTypeLocation, typeLocation, everything()) %>%
+          dplyr::select(idRecord, idGKG, everything())
+      }
+
+      if (gdelt_cols == 61) {
+        gdelt_data <-
+          csv_file_loc %>%
+          readr::read_tsv(col_names = F) %>%
+          suppressWarnings()
+
+        names(gdelt_data) <-
+          get_schema_gdelt_events() %>% .$nameActual
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::rename(dateTimeDocument = dateTimeDataAdded) %>%
+          dplyr::mutate(
+            dateEvent = dateEvent %>% lubridate::ymd,
+            dateTimeDocument = dateTimeDocument %>% ymd_hms() %>% with_tz(Sys.timezone()),
+            nameSource = urlSource %>% domain() %>% str_replace_all("www.", '')
+          )
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::mutate_each_(funs(as.logical(.)),
+                              gdelt_data %>% dplyr::select(matches("is")) %>% names)
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::left_join(data_frame(
+            classQuad =  1:4,
+            nameQuad =  c(
+              'Verbal Cooperation',
+              'Material Cooperation',
+              'Verbal Conflict',
+              'Material Conflict'
+            )
+          )) %>%
+          suppressMessages()
+      }
+
+      if (gdelt_cols == 57) {
+        gdelt_data <-
+          csv_file_loc %>%
+          readr::read_tsv(col_names = F) %>%
+          suppressWarnings()
+
+        names(gdelt_data) <-
+          c(
+            "idGlobalEvent",
+            "dateEvent",
+            "monthYearEvent",
+            "yearEvent",
+            "dateFraction",
+            "codeActor1",
+            "nameActor1",
+            "codeISOActor1",
+            "codeCAMEOGroupActor1",
+            "codeCAMEOEthnicityActor1",
+            "codeCAMEOReligionActor1",
+            "codeCAMEOReligion2Actor1",
+            "codeCAMEOTypeActor1",
+            "codeCAMEOType2Actor1",
+            "codeCAMEOType3Actor1",
+            "codeActor2",
+            "nameActor2",
+            "codeISOActor2",
+            "codeCAMEOGroupActor2",
+            "codeCAMEOEthnicityActor2",
+            "codeCAMEOReligionActor2",
+            "codeCAMEOReligion2Actor2",
+            "codeCAMEOTypeActor2",
+            "codeCAMEOType2Actor2",
+            "codeCAMEOType3Actor.3",
+            "isRootEvent",
+            "codeEvent",
+            "codeEventBase",
+            "codeEventRoot",
+            "classQuad",
+            "scoreGoldstein",
+            "countMentions",
+            "countSources",
+            "countArticles",
+            "avgTone",
+            "idTypeLocationActor1",
+            "locationActor1",
+            "idCountryActor1",
+            "idADM1CodeActor1",
+            "latitudeActor1",
+            "longitudeActor1",
+            "idFeatureActor1",
+            "idTypeLocationActor2",
+            "locationActor2",
+            "idCountryActor2",
+            "idADM1CodeActor2",
+            "latitudeActor2",
+            "longitudeActor2",
+            "idFeatureActor2",
+            "idTypeLocationAction",
+            "locationAction",
+            "idCountryAction",
+            "idADM1CodeAction",
+            "latitudeAction",
+            "longitudeAction",
+            "idFeatureAction",
+            "dateAdded"
+          )
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::rename(dateDocument = dateAdded) %>%
+          dplyr::mutate(
+            dateEvent = dateEvent %>% lubridate::ymd,
+            dateDocument = dateDocument %>% lubridate::ymd
+          ) %>%
+          suppressWarnings()
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::mutate_each_(funs(as.logical(.)),
+                              gdelt_data %>% dplyr::select(matches("is")) %>% names)
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::left_join(data_frame(
+            classQuad =  1:4,
+            nameQuad =  c(
+              'Verbal Cooperation',
+              'Material Cooperation',
+              'Verbal Conflict',
+              'Material Conflict'
+            )
+          )) %>%
+          suppressMessages()
+      }
+
+      if (gdelt_cols == 58) {
+        load_needed_packages(c('urltools'))
+        gdelt_data <-
+          csv_file_loc %>%
+          readr::read_tsv(col_names = F) %>%
+          suppressWarnings()
+        names(gdelt_data) <-
+          c(
+            "idGlobalEvent",
+            "dateEvent",
+            "monthYearEvent",
+            "yearEvent",
+            "dateFraction",
+            "codeActor1",
+            "nameActor1",
+            "codeISOActor1",
+            "codeCAMEOGroupActor1",
+            "codeCAMEOEthnicityActor1",
+            "codeCAMEOReligionActor1",
+            "codeCAMEOReligion2Actor1",
+            "codeCAMEOTypeActor1",
+            "codeCAMEOType2Actor1",
+            "codeCAMEOType3Actor1",
+            "codeActor2",
+            "nameActor2",
+            "codeISOActor2",
+            "codeCAMEOGroupActor2",
+            "codeCAMEOEthnicityActor2",
+            "codeCAMEOReligionActor2",
+            "codeCAMEOReligion2Actor2",
+            "codeCAMEOTypeActor2",
+            "codeCAMEOType2Actor2",
+            "codeCAMEOType3Actor.3",
+            "isRootEvent",
+            "codeEvent",
+            "codeEventBase",
+            "codeEventRoot",
+            "classQuad",
+            "scoreGoldstein",
+            "countMentions",
+            "countSources",
+            "countArticles",
+            "avgTone",
+            "idTypeLocationActor1",
+            "locationActor1",
+            "idCountryActor1",
+            "idADM1CodeActor1",
+            "latitudeActor1",
+            "longitudeActor1",
+            "idFeatureActor1",
+            "idTypeLocationActor2",
+            "locationActor2",
+            "idCountryActor2",
+            "idADM1CodeActor2",
+            "latitudeActor2",
+            "longitudeActor2",
+            "idFeatureActor2",
+            "idTypeLocationAction",
+            "locationAction",
+            "idCountryAction",
+            "idADM1CodeAction",
+            "latitudeAction",
+            "longitudeAction",
+            "idFeatureAction",
+            "dateAdded",
+            "urlSource"
+          )
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::rename(dateTimeDocument = dateAdded) %>%
+          dplyr::mutate(
+            dateEvent = dateEvent %>% lubridate::ymd,
+            dateTimeDocument %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone()),
+            dateDocument = dateTimeDocument %>% as.Date(),
+            nameSource = urlSource %>% domain() %>% str_replace_all("www.", '')
+          ) %>%
+          suppressWarnings()
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::mutate_each_(funs(as.logical(.)),
+                              gdelt_data %>% dplyr::select(matches("is")) %>% names)
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::left_join(data_frame(
+            classQuad =  1:4,
+            nameQuad =  c(
+              'Verbal Cooperation',
+              'Material Cooperation',
+              'Verbal Conflict',
+              'Material Conflict.'
+            )
+          )) %>%
+          suppressMessages()
+
+      }
+
+      if (gdelt_cols == 11) {
+        gdelt_data <-
+          csv_file_loc %>%
+          readr::read_tsv(col_names = T) %>%
+          suppressWarnings()
+
+        schema_df <-
+          get_schema_gkg_general()
+
+        names(gdelt_data) <-
+          schema_df$nameActual[names(gdelt_data) %>% match(schema_df$nameGDELT)]
+
+        names(gdelt_data)[1] <-
+          c('date')
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::mutate(
+            idRecord = 1:n(),
+            idGKG = date %>% paste0('.', idRecord),
+            date = date %>% lubridate::ymd(),
+            urlSources = urlSources %>% str_replace_all("<UDIV>", ';')
+          ) %>%
+          dplyr::select(idRecord, idGKG, everything())
+
+      }
+
+      if (gdelt_cols == 27) {
+        gdelt_data <-
+          csv_file_loc %>%
+          readr::read_tsv(col_names = F) %>%
+          suppressWarnings()
+
+        schema_df <-
+          get_schema_gkg_general()
+
+        names(gdelt_data) <-
+          schema_df$nameActual[1:27]
+
+        gdelt_data <-
+          gdelt_data %>%
+          dplyr::mutate(
+            idSourceCollectionIdentifier = idSourceCollectionIdentifier %>% as.numeric(),
+            isDocumentURL = ifelse(documentSource %>% str_detect('http'), T, F)
+          ) %>%
+          dplyr::select(idGKG:idSourceCollectionIdentifier,
+                        isDocumentURL,
+                        everything()) %>%
+          dplyr::rename(dateTimeDocument = dateDocument) %>%
+          dplyr::mutate(dateTimeDocument = dateTimeDocument %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone())) %>%
+          separate(
+            idGKG,
+            into = c('dateTime', 'idDateTimeArticle'),
+            sep = '\\-',
+            remove = F
+          ) %>%
+          dplyr::select(-c(dateTime, translationInfo)) %>%
+          dplyr::mutate(
+            idDateTimeArticle = idDateTimeArticle %>% as.numeric,
+            domainSource = if_else(
+              isDocumentURL == T,
+              documentSource %>% urltools::domain,
+              nameSource
+            )
+          ) %>%
+          dplyr::select(idGKG:documentSource, domainSource, everything()) %>%
+          suppressMessages() %>%
+          suppressWarnings()
+
+      }
+
+      if (remove_files) {
+        "rm -R " %>%
+          paste0(temp.dir) %>%
+          system()
+        if (empty_trash) {
+          system('rm -rf ~/.Trash/*')
+        }
+      }
+
+
     }
-
-
     if ('idADM1CodeActor1' %in% names(gdelt_data)) {
       gdelt_data <-
         gdelt_data %>%
@@ -1429,12 +1845,10 @@ get_gdelt_url_data <-
       "Downloaded, parsed and imported " %>%
         paste0(url) %>%
         message()
-
     }
-
     return(gdelt_data)
-
   }
+
 #' Gets clean count data
 #'
 #' @param all_counts
@@ -3604,27 +4018,16 @@ parse_gkg_mentioned_source_data <-
     return(all_counts)
   }
 
+get_data_gkg_day_detailed <-
+  function(date_data = "2016-06-01",
+           table_name = "gkg",
+           file_directory =  NULL,
+           folder_name = 'gdelt_data',
+           only_most_recent = F,
+           remove_files = T,
+           empty_trash = T,
+           return_message = T) {
 
-#' Retrieves detailed GKG data for a given day from a specified table
-#'
-#' @param date_data must be a date in Year - Month - Day format
-#' @param table_name the name of the table
-#' options \code{c('gkg', 'export', 'mentions'))}
-#' @param file_directory
-#' @param empty_trash
-#' @param return_message
-#' @importFrom urltools domain
-#' @return
-#'
-#' @examples
-
-get_data_gkg_day_detailed <- function(date_data = "2016-06-01",
-                                      table_name = "gkg",
-                                      file_directory = 'Desktop/temp_gdelt_data',
-                                      only_most_recent = F,
-                                      remove_files = T,
-                                      empty_trash = T,
-                                      return_message = T) {
   if (only_most_recent == T) {
     date_data <-
       Sys.Date()
@@ -3686,6 +4089,7 @@ get_data_gkg_day_detailed <- function(date_data = "2016-06-01",
         url = x,
         remove_files = remove_files,
         file_directory = file_directory,
+        folder_name = folder_name,
         return_message = return_message,
         empty_trash = empty_trash
       )
@@ -3722,6 +4126,14 @@ get_data_gkg_day_detailed <- function(date_data = "2016-06-01",
 #' \code{T, F}
 #' @param return_message Do you want to return a message
 #' \code{T, F}
+#' @importFrom purrr flatten_chr
+#' @importFrom tidyr extract_numeric
+#' @importFrom purrr compact
+#' @import dplyr
+#' @import utils
+#' @importFrom urltools domain
+#' @importFrom curl curl_download curl
+#' @importFrom urltools domain
 #' @importFrom purrr map
 #' @import dplyr
 #' @return
@@ -3730,7 +4142,8 @@ get_data_gkg_day_detailed <- function(date_data = "2016-06-01",
 #' @examples
 get_data_gkg_days_detailed <- function(dates = c("2016-07-19"),
                                        table_name = c("gkg"),
-                                       file_directory = 'Desktop/temp_gdelt_data',
+                                       file_directory = NULL,
+                                       folder_name = 'gdelt_data',
                                        only_most_recent = F,
                                        remove_files = T,
                                        empty_trash = T,
@@ -3753,6 +4166,7 @@ get_data_gkg_days_detailed <- function(dates = c("2016-07-19"),
           table_name = var_matrix$table_name[x],
           only_most_recent = only_most_recent,
           file_directory = file_directory,
+          folder_name = folder_name,
           remove_files = remove_files,
           empty_trash = empty_trash,
           return_message = return_message
@@ -3791,13 +4205,20 @@ get_data_gkg_days_detailed <- function(dates = c("2016-07-19"),
 #' \code{c(TRUE, FALSE)}
 #' @param return_message
 #' \code{c(TRUE, FALSE)}
-#'
+#' @importFrom purrr flatten_chr
+#' @importFrom tidyr extract_numeric
+#' @importFrom purrr compact
+#' @import dplyr
+#' @import utils
+#' @importFrom urltools domain
+#' @importFrom curl curl_download curl
 #' @return
 #'
 #' @examples
 
 get_data_gkg_day_summary <- function(date_data = "2016-06-01",
-                                     file_directory = 'Desktop/temp_gdelt_data',
+                                     file_directory = NULL,
+                                     folder_name = 'gdelt_data',
                                      is_count_file = F,
                                      remove_files = T,
                                      empty_trash = T,
@@ -3852,6 +4273,7 @@ get_data_gkg_day_summary <- function(date_data = "2016-06-01",
         url = x,
         remove_files = remove_files,
         file_directory = file_directory,
+        folder_name = folder_name,
         return_message = return_message,
         empty_trash = empty_trash
       )
@@ -3906,7 +4328,8 @@ get_data_gkg_day_summary <- function(date_data = "2016-06-01",
 
 get_data_gkg_days_summary <- function(dates = c("2016-06-01"),
                                       is_count_file = c(T,F),
-                                      file_directory = 'Desktop/temp_gdelt_data',
+                                      file_directory = NULL,
+                                      folder_name = 'gdelt_data',
                                       remove_files = T,
                                       empty_trash = T,
                                       nest_data = F,
@@ -3929,6 +4352,7 @@ get_data_gkg_days_summary <- function(dates = c("2016-06-01"),
           date_data = var_matrix$date[x],
           is_count_file = var_matrix$is_count_file[x],
           file_directory = file_directory,
+          folder_name = folder_name,
           remove_files = remove_files,
           empty_trash = empty_trash,
           return_message = return_message
@@ -3950,11 +4374,19 @@ get_data_gkg_days_summary <- function(dates = c("2016-06-01"),
 #' @param empty_trash
 #' @param return_message
 #' @importFrom purrr compact
+#' @importFrom purrr flatten_chr
+#' @importFrom tidyr extract_numeric
+#' @importFrom purrr compact
+#' @import dplyr
+#' @import utils
+#' @importFrom urltools domain
+#' @importFrom curl curl_download curl
 #' @return
 #'
 #' @examples
 get_data_gdelt_period_event <- function(period = 1983,
-                                        file_directory = 'Desktop/temp_gdelt_data',
+                                        file_directory = NULL,
+                                        folder_name = 'gdelt_data',
                                         remove_files = T,
                                         empty_trash = T,
                                         return_message = T) {
@@ -3989,18 +4421,16 @@ get_data_gdelt_period_event <- function(period = 1983,
 
   all_data <-
     urls %>%
-    purrr::map(function(x) {
+    purrr::map_df(function(x) {
       get_gdelt_url_data_safe(
         url = x,
         remove_files = remove_files,
         file_directory = file_directory,
+        folder_name = folder_name,
         return_message = return_message,
         empty_trash = empty_trash
       )
-    }) %>%
-    purrr::compact %>%
-    bind_rows %>%
-    distinct
+    })
 
   if (return_message == T) {
     "You retrieved " %>%
@@ -4020,14 +4450,15 @@ get_data_gdelt_period_event <- function(period = 1983,
 #' @param remove_files
 #' @param empty_trash
 #' @param return_message
-#'
+#' @importFrom purrr compact
 #' @return
 #' @export
 #'
 #' @examples
 #' get_data_gdelt_periods_event (periods = c(1983))
 get_data_gdelt_periods_event <- function(periods = c(1983, 1989),
-                                         file_directory = 'Desktop/temp_gdelt_data',
+                                         file_directory = NULL,
+                                         folder_name = 'gdelt_data',
                                          remove_files = T,
                                          empty_trash = T,
                                          return_message = T) {
@@ -4041,6 +4472,7 @@ get_data_gdelt_periods_event <- function(periods = c(1983, 1989),
         get_data_gdelt_period_event_safe(
           period = periods[x],
           file_directory = file_directory,
+          folder_name = folder_name,
           remove_files = remove_files,
           empty_trash = empty_trash,
           return_message = return_message
@@ -4155,20 +4587,6 @@ get_urls_vgkg_most_recent  <- function() {
   return(log_df)
 }
 
-
-#' Gets Cloud Vision Data File
-#'
-#' @param url
-#' @param return_message
-#' @return
-#' @importFrom httr url_ok
-#' @import stringr
-#' @importFrom purrr flatten_chr
-#' @importFrom curl curl_download
-#' @importFrom readr read_tsv
-#' @importFrom lubridate ymd_hms
-#' @importFrom lubridate with_tz
-#' @examples
 get_data_vgkg_url <-
   function(url = 'http://data.gdeltproject.org/gdeltv2_cloudvision/20160606234500.imagetagsv1.csv.gz',
            remove_json_column = T,
@@ -4218,18 +4636,7 @@ get_data_vgkg_url <-
     return(cloud_vision_data)
   }
 
-#' Get Data CV Day
-#'
-#' @param date_data
-#' @param include_translations
-#' @param file_directory
-#' @param remove_files
-#' @param empty_trash
-#' @param return_message
-#'
-#' @return
-#'
-#' @examples
+
 get_data_vgkg_day <-
   function(date_data = "2016-06-08",
            include_translations = F,
@@ -4318,6 +4725,13 @@ get_data_vgkg_day <-
 #' @param empty_trash
 #' @param return_message
 #' @importFrom urltools domain
+#' @importFrom httr url_ok
+#' @import stringr
+#' @importFrom purrr flatten_chr
+#' @importFrom curl curl_download
+#' @importFrom readr read_tsv
+#' @importFrom lubridate ymd_hms
+#' @importFrom lubridate with_tz
 #' @return
 #' @export
 #'
@@ -5515,14 +5929,6 @@ get_data_gkg_tv <-
     return(gkg_tv_data)
   }
 
-#' Gets GKG TV data for given day
-#'
-#' @param date_data
-#' @param return_message
-#'
-#' @return
-#'
-#' @examples
 get_data_gkg_tv_day <- function(date_data = "2016-06-01",
                                 only_most_recent = F,
                                 return_message = T) {
@@ -5609,8 +6015,8 @@ get_data_gkg_tv_day <- function(date_data = "2016-06-01",
 #' @importFrom purrr map
 #' @examples
 get_data_gkg_tv_days <- function(dates = c("2016-06-01", "2016-02-01"),
-                                       only_most_recent = F,
-                                       return_message = T) {
+                                 only_most_recent = F,
+                                 return_message = T) {
   get_data_gkg_tv_day_safe <-
     failwith(NULL, get_data_gkg_tv_day)
 

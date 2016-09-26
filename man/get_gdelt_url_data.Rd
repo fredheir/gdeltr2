@@ -2,20 +2,18 @@
 % Please edit documentation in R/gdelt_event_gkg.R
 \name{get_gdelt_url_data}
 \alias{get_gdelt_url_data}
-\title{Retrieves GDELT Event or GKG data from a given URL}
+\title{Title}
 \usage{
 
   get_gdelt_url_data(url = "http://data.gdeltproject.org/gdeltv2/20160531000000.gkg.csv.zip",
-  file_directory = "Desktop/temp_gdelt_data", remove_files = T,
-  empty_trash = T, return_message = T)
+  file_directory = NULL, folder_name = "gdelt_data",
+  remove_existing_folder = T, remove_files = T, empty_trash = T,
+  return_message = T)
 }
-\value{
-
+\arguments{
+\item{return_message}{}
 }
 \description{
-Retrieves GDELT Event or GKG data from a given URL
-}
-\examples{
-get_gdelt_url_data(url = "http://data.gdeltproject.org/gdeltv2/20160531000000.gkg.csv.zip", file_directory = 'Desktop/temp_gdelt_data', remove_files = T, empty_trash = T, return_message = T)
+Title
 }
 

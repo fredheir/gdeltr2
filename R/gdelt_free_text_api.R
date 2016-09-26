@@ -1,15 +1,3 @@
-#' Parses Source
-#'
-#' @param source
-#' @export
-#' @return
-#' @import tidyr
-#' @importFrom lubridate with_tz
-#' @importFrom lubridate mdy_hm
-#' @importFrom magrittr %<>%
-#' @import stringr
-#'
-#' @examples
 parse_source <-
   function(source = "netsdaily.com - writedate('06/02/2016 12:00 UTC'); (English / United States)") {
     source_df <-
@@ -36,38 +24,6 @@ parse_source <-
 
     return(source_df)
   }
-
-#' Returns data frame for given term from GDELT free text API
-#'
-#' @param term any word, can be quoted or not
-#' @param domain domain name
-#' \code{c(NA,'domain_name')}
-#' @param return_image_url
-#' @param last_minutes how many prior minutes
-#' @param max_rows number of rows
-#' @param tone_less_than tone more than specified number
-#' @param tone_more_than tone less than specified number
-#' @param search_language
-#' @param source_language
-#' @param sort_by How do you wish to sort the data
-#' \code{c('date', 'relevence', 'tone.ascending', 'tone.descending')}
-#' @param dedeup_results return unique results
-#' \code{c(T, F)}
-#' @param only_english return only english results
-#' \code{c(T, F)}
-#' @param return_message
-#' \code{c(T, F)}
-#' @importFrom jsonlite fromJSON
-#' @importFrom urltools url_encode
-#' @importFrom httr GET
-#' @importFrom purrr flatten_df
-#' @import rvest
-#' @importFrom xml2 read_html
-#'
-#' @return
-#'
-#' @examples
-#' get_data_ft_api_term(term = '"Brooklyn Nets"')
 
 get_data_ft_api_term <-
   function(term = '"Brooklyn Nets"',
@@ -114,7 +70,6 @@ get_data_ft_api_term <-
       domain_slug <-
         ''
     }
-
 
     if (!search_language %>% is.na()) {
       search_lang_slug <-
@@ -378,14 +333,22 @@ get_data_ft_api_term <-
 #' @param dedeup_results
 #' @param only_english
 #' @param return_message
-#'
+#' @import tidyr stringr rvest tidyverse
+#' @importFrom lubridate with_tz
+#' @importFrom lubridate mdy_hm
+#' @importFrom magrittr %<>%
+#' @importFrom jsonlite fromJSON
+#' @importFrom urltools url_encode
+#' @importFrom httr GET
+#' @importFrom purrr flatten_df
+#' @importFrom xml2 read_html
 #' @return
 #' @export
 #'
 #' @examples
 #' get_data_ft_api_terms(terms = c('"Kevin Durant"','"Stephen Curry"'), only_english = T)
 get_data_ft_api_terms <-
-  function(terms = c('"Brooklyn Nets"', '"New York Knicks"'),
+  function(terms = c('"Kevin Durant"','"Stephen Curry"'),
            domain = NA,
            dedeup_results = T,
            restrict_to_usa = F,
@@ -398,8 +361,9 @@ get_data_ft_api_terms <-
            sort_by = 'date',
            nest_data = F,
            return_message = T) {
+
     get_data_ft_api_term_safe <-
-      failwith(NULL, get_data_ft_api_term)
+      possibly(get_data_ft_api_term, NULL)
 
     var_matrix <-
       expand.grid(
@@ -418,10 +382,10 @@ get_data_ft_api_terms <-
       suppressWarnings()
 
     all_data <-
-      seq_len(var_matrix %>% nrow) %>%
-      map(
-        function(x)
-          get_data_ft_api_term_safe(
+      1:nrow(var_matrix) %>%
+      map_df(
+        function(x) {
+          get_data_ft_api_term(
             term = var_matrix$term[x],
             domain = var_matrix$domain[x],
             return_image_url = var_matrix$return_image_url[x],
@@ -434,9 +398,8 @@ get_data_ft_api_terms <-
             only_english = var_matrix$only_english[x],
             dedeup_results = dedeup_results
           )
+        }
       ) %>%
-      compact %>%
-      bind_rows %>%
       arrange(desc(dateTimeArticle))
 
     if (nest_data) {
@@ -465,12 +428,14 @@ get_data_ft_api_terms <-
 #' @param only_english
 #' @param return_message
 #' @param nest_data
+#' @import tidyr stringr rvest tidyverse
 #' @importFrom xml2 read_html
 #' @return
 #' @export
 #'
 #' @examples
 #' get_data_ft_api_domains(domains = c('realdeal.com', 'pehub.com', 'sbnation.com', 'wsj.com', 'seekingalpha.com')) %>% View
+
 get_data_ft_api_domains <-
   function(domains = c('washingtonpost.com', 'nytimes.com'),
            use_exact_domains = F,
@@ -552,25 +517,6 @@ get_data_ft_api_domains <-
 
   }
 
-#' Retrives word cloud data from GDELT free text API for a given term, domain or term and domain
-#'
-#' @param term
-#' @param domain
-#' @param last_minutes
-#' @param search_language
-#' @param tone_more_than
-#' @param tone_less_than
-#' @param source_language
-#' @param sort_by
-#' @param dedeup_results
-#' @param return_message
-#' @import rvest
-#' @importFrom xml2 read_html
-#' @return
-#'
-#' @examples
-#' get_data_wordcloud_ft_api(term = NA, domain = 'wsj.com', tone_more_than = 5)
-#' get_data_wordcloud_ft_api(term = '"Brooklyn Nets"')
 get_data_wordcloud_ft_api <-
   function(term = '"Brooklyn Nets"',
            domain = NA,
@@ -714,7 +660,7 @@ get_data_wordcloud_ft_api <-
 
     page.has.content <-
       url %>%
-      GET
+      GET()
 
     page_size_df <-
       page.has.content$headers  %>%
@@ -729,7 +675,8 @@ get_data_wordcloud_ft_api <-
       url %>%
       read_csv() %>%
       mutate(term, url, dateTimeData = Sys.time()) %>%
-      dplyr::select(term, everything())
+      dplyr::select(term, everything()) %>%
+      suppressMessages()
 
     names(wordcloud_data)[2:3] <-
       c('word', 'articles')
@@ -740,8 +687,8 @@ get_data_wordcloud_ft_api <-
                       into = c('countArticles', 'size'),
                       sep = '\\(') %>%
       mutate(
-        countArticles = countArticles %>% extract_numeric(),
-        size = size %>% extract_numeric
+        countArticles = countArticles %>% readr::parse_number(),
+        size = size %>% readr::parse_number()
       ) %>%
       dplyr::rename(urlSearch = url,
                     sizeWord = size)
@@ -796,6 +743,7 @@ get_data_wordcloud_ft_api <-
 #' @param dedeup_results
 #' @param return_message
 #' @param nest_data
+#' @import tidyr stringr rvest tidyverse
 #' @return
 #' @export
 #'
@@ -887,6 +835,7 @@ get_data_wordcloud_ft_api_domains <-
 #' @param nest_data returns a nested data frame
 #' \code{c(T, F)}
 #' @importFrom tidyr nest
+#' @import tidyr stringr rvest tidyverse
 #' @return
 #' @export
 #'
@@ -952,24 +901,6 @@ get_data_wordcloud_ft_api_terms <-
 
   }
 
-#' Returns GDELT free text API sentiment DF for a domain or a term
-#'
-#' @param term
-#' @param last_minutes
-#' @param is_tone
-#' @param domain
-#' @param tone_less_than
-#' @param tone_more_than
-#' @param search_language
-#' @param source_language
-#' @param sort_by
-#' @param dedeup_results
-#' @param return_message
-#' @import rvest
-#' @importFrom lubridate mdy_hms
-#' @return
-#'
-#' @examples
 get_data_sentiment_ft_api <- function(term = 'Clinton',
                                       domain = NA,
                                       last_minutes = NA,
@@ -1140,7 +1071,8 @@ get_data_sentiment_ft_api <- function(term = 'Clinton',
     url %>%
     readr::read_csv() %>%
     mutate(term, url, dateTimeData = Sys.time()) %>%
-    dplyr::select(term, everything())
+    dplyr::select(term, everything()) %>%
+    suppressMessages()
 
 
   names(sentiment_data)[2:3] <-
@@ -1210,6 +1142,7 @@ get_data_sentiment_ft_api <- function(term = 'Clinton',
 #' @param return_message
 #' @param nest_data
 #' @return
+#' @import tidyr stringr rvest tidyverse
 #' @export
 #'
 #' @examples
@@ -1373,7 +1306,8 @@ get_data_sentiment_ft_api_terms <-
 #' @importFrom readr read_tsv
 #' @importFrom purrr set_names
 #' @examples
-get_codes_stability_locations <- function() {
+get_codes_stability_locations <-
+  function() {
   country_df <-
     'http://data.gdeltproject.org/blog/stability-dashboard-api/GEOLOOKUP-COUNTRY.TXT' %>%
     read_tsv(col_names = F) %>%
@@ -1420,15 +1354,6 @@ get_codes_stability_locations <- function() {
 
 }
 
-#' Removes full NA columns from specified data frame
-#'
-#' @param data a data frame
-#' @param col_name specified column
-#'
-#' @return
-#' @import dplyr
-#' @importFrom magrittr %>%
-#' @examples
 remove_full_na_column <-
   function(data, col_name = c('codeLocation')) {
     col_selected <-
@@ -1444,20 +1369,6 @@ remove_full_na_column <-
     return(data)
   }
 
-
-
-#' Gets instability data for given location
-#'
-#' @param location_id
-#' @param day_moving_average
-#' @param time_period
-#' @param use_multi_locations
-#' @param return_wide
-#' @param return_message
-#'
-#' @return
-#'
-#' @examples
 get_data_location_instability_api <-
   function(location_id = 'US',
            variable_name = 'instability',
@@ -1590,7 +1501,8 @@ get_data_location_instability_api <-
           dayMovingAverage = day_moving_average
         ) %>%
         dplyr::select(Date, idLocation, typePeriod, dayMovingAverage,
-                      item, value)
+                      item, value) %>%
+        suppressMessages()
 
       names(data)[1] <-
         period_name
@@ -1680,11 +1592,13 @@ get_data_location_instability_api <-
 #' @param return_wide Return data in wide form
 #' @param nest_data Return data in nested form
 #' \code{c(T,F)}
+
 #' @param return_message Return a message
 #'
 #' @return
 #' @export
-#'
+#' @import tidyr stringr rvest tidyverse
+#' @importFrom magrittr extract2
 #' @examples
 get_data_locations_instability_api <-
   function(location_ids = c('US', 'IS', "TU"),
@@ -1764,8 +1678,9 @@ get_data_locations_instability_api <-
 #'
 #' @return
 #' @export
-#' @import dplyr stringr
+#' @import tidyr stringr rvest tidyverse
 #' @importFrom readr read_csv
+#' @importFrom magrittr extract2
 #' @examples
 get_data_ft_trending_terms <-
   function(sort_data = T) {
