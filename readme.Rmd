@@ -209,9 +209,6 @@ domain_sentiment <-
 events_1989 <-
   get_data_gdelt_periods_event(
     periods = 1989,
-    file_directory = 'Desktop/gkg_temp',
-    remove_files = T,
-    empty_trash = T,
     return_message = T
   )
 ```
@@ -223,9 +220,6 @@ gkg_summary_count_may_15_16_2014 <-
   get_data_gkg_days_summary(
     dates = c('2014-05-15', '2014-05-16'),
     is_count_file = T,
-    file_directory = 'Desktop/gkg_temp',
-    remove_files = T,
-    empty_trash = T,
     return_message = T
   )
 
@@ -233,9 +227,6 @@ gkg_full_june_2_2016 <-
   get_data_gkg_days_detailed(
     dates = c("2016-06-02"),
     table_name = 'gkg',
-    file_directory = 'Desktop/gkg_temp',
-    remove_files = T,
-    empty_trash = T,
     return_message = T
   )
 
@@ -243,9 +234,6 @@ gkg_mentions_may_12_2016 <-
   get_data_gkg_days_detailed(
     dates = c("2016-05-12"),
     table_name = 'mentions',
-    file_directory = 'Desktop/gkg_temp',
-    remove_files = T,
-    empty_trash = T,
     return_message = T
   )
 ```
