@@ -13,8 +13,8 @@ parse_source <-
         date = date %>% gsub('\\writedate', '', .) %>% str_replace_all('\\(', '') %>% str_replace_all('\\)', '') %>%
           str_replace_all("\\'", '')
       ) %>%
-      mutate(dateTime = date %>% mdy_hm %>% with_tz(Sys.timezone())) %>%
-      mutate(date = dateTime %>% as.Date) %>%
+      mutate(dateTime = date %>% lubridate::mdy_hm() %>% lubridate::with_tz(Sys.timezone())) %>%
+      mutate(date = dateTime %>% as.Date()) %>%
       tidyr::separate(language,
                       into = c('language', 'country'),
                       sep = '\\, ') %>%
@@ -52,7 +52,7 @@ get_data_ft_api_term <-
       term_slug <-
         term %>%
         str_to_lower() %>%
-        url_encode()
+        URLencode()
       term_word <-
         term
     }
@@ -65,7 +65,7 @@ get_data_ft_api_term <-
     if (!domain %>% is.na()) {
       domain_slug <-
         '%20domain:' %>%
-        paste0(domain %>% urltools::url_encode())
+        paste0(domain %>% URLencode())
     } else {
       domain_slug <-
         ''
@@ -190,11 +190,11 @@ get_data_ft_api_term <-
 
     page.has.content <-
       url %>%
-      GET
+      httr::GET()
 
     page_size_df <-
       page.has.content$headers  %>%
-      flatten_df
+      flatten_df()
 
     if (!page.has.content$status_code == 200) {
       stop("Seaerch has no data")
@@ -212,31 +212,31 @@ get_data_ft_api_term <-
 
     page <-
       url %>%
-      read_html
+      xml2::read_html()
 
     if (page %>%
-        html_nodes(xpath = '//b') %>%
-        html_text %>%
-        str_trim %>% length == 0) {
+        rvest::html_nodes(xpath = '//b') %>%
+        rvest::html_text() %>%
+        str_trim() %>% length == 0) {
       stop("This search has no data")
     }
 
     titleArticle <-
       page %>%
-      html_nodes(xpath = '//b') %>%
-      html_text %>%
-      str_trim
+      rvest::html_nodes(xpath = '//b') %>%
+      rvest::html_text() %>%
+      str_trim()
 
     url.source <-
       page %>%
-      html_nodes(xpath = '//a') %>%
-      html_attr('href') %>%
+      rvest::html_nodes(xpath = '//a') %>%
+      rvest::html_attr('href') %>%
       .[c(T, F)]
 
     sources <-
       page %>%
-      html_nodes(xpath = '//*[contains(concat( " ", @class, " " ), concat( " ", "sourceinfo", " " ))]') %>%
-      html_text
+      rvest::html_nodes(xpath = '//*[contains(concat( " ", @class, " " ), concat( " ", "sourceinfo", " " ))]') %>%
+      rvest::html_text()
 
     url_df <-
       data_frame(
@@ -253,8 +253,8 @@ get_data_ft_api_term <-
     if (return_image_url == T) {
       urlThumbnail <-
         page %>%
-        html_nodes(xpath = '//*[contains(concat( " ", @class, " " ), concat( " ", "thumbimg", " " ))]') %>%
-        html_attr('src')
+        rvest::html_nodes(xpath = '//*[contains(concat( " ", @class, " " ), concat( " ", "thumbimg", " " ))]') %>%
+        rvest::html_attr('src')
 
       urlThumbnail[urlThumbnail == ''] <-
         NA
@@ -338,7 +338,6 @@ get_data_ft_api_term <-
 #' @importFrom lubridate mdy_hm
 #' @importFrom magrittr %<>%
 #' @importFrom jsonlite fromJSON
-#' @importFrom urltools url_encode
 #' @importFrom httr GET
 #' @importFrom purrr flatten_df
 #' @importFrom xml2 read_html
@@ -378,7 +377,7 @@ get_data_ft_api_terms <-
         source_language = source_language,
         stringsAsFactors = F
       ) %>%
-      as_data_frame %>%
+      as_data_frame() %>%
       suppressWarnings()
 
     all_data <-
@@ -538,7 +537,7 @@ get_data_wordcloud_ft_api <-
       term_slug <-
         term %>%
         str_to_lower() %>%
-        urltools::url_encode()
+        URLencode()
       term_word <-
         term
     }
@@ -658,11 +657,11 @@ get_data_wordcloud_ft_api <-
 
     page.has.content <-
       url %>%
-      GET()
+      httr::GET()
 
     page_size_df <-
       page.has.content$headers  %>%
-      flatten_df %>%
+      flatten_df() %>%
       mutate(`content-length` = `content-length` %>% as.numeric)
 
     if (page_size_df$`content-length` <= 41) {
@@ -918,7 +917,7 @@ get_data_sentiment_ft_api <- function(term = 'Clinton',
     term_slug <-
       term %>%
       str_to_lower() %>%
-      urltools::url_encode()
+      URLencode()
 
     term_word <-
       term
@@ -1050,11 +1049,11 @@ get_data_sentiment_ft_api <- function(term = 'Clinton',
 
   page.has.content <-
     url %>%
-    GET
+    httr::GET()
 
   page_size_df <-
     page.has.content$headers  %>%
-    flatten_df %>%
+    flatten_df() %>%
     mutate(`content-length` = `content-length` %>% as.numeric)
 
   if (page_size_df$`content-length` <= 41) {
@@ -1077,7 +1076,7 @@ get_data_sentiment_ft_api <- function(term = 'Clinton',
 
   sentiment_data %<>%
     mutate(
-      dateTimeSentiment = dateTime_human.url %>% lubridate::mdy_hms(tz = 'UTC') %>%  with_tz(Sys.timezone()),
+      dateTimeSentiment = dateTime_human.url %>% lubridate::mdy_hms(tz = 'UTC') %>%  lubridate::with_tz(Sys.timezone()),
       dateSentiment = dateTime_human.url %>% lubridate::mdy_hms(tz = 'UTC') %>% as.Date()
     ) %>%
     dplyr::select(-c(dateTime.url, dateTime_human.url)) %>%
