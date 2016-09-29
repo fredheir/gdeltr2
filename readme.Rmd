@@ -162,7 +162,7 @@ load_needed_packages(c('dplyr', 'magrittr'))
 ### Full Text API
 ```{r eval=FALSE}
 test_terms <-
-  c('"Brooklyn Nets"', 'El Chapo', '"Hassan Whiteside"', '"EB5"', '"Toy Poodle"')
+  c('"Brooklyn Nets"', 'El Chapo', '"Hassan Whiteside"', '"EB5"', '"Toy Poodle"', "Gary Vaynerchuk")
 
 term_data <- 
   get_data_ft_api_terms(
@@ -184,7 +184,7 @@ test_domains <-
 domain_data <- 
   get_data_ft_api_domains(term = NA, domains = test_domains)
 
-nested_domains <- 
+nested_domains <-
   get_data_ft_api_domains(
     domains = c('netsdaily.com', 'washingtonpost.com', 'curbed.com'),
     nest_data = T

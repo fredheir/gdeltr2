@@ -33,7 +33,7 @@ get_data_ft_api_term <-
            last_minutes = NA,
            max_rows = 1000,
            only_english = T,
-           return_image_url = T,
+           return_image_url = F,
            tone_less_than = NA,
            tone_more_than = NA,
            search_language = 'English',
@@ -43,7 +43,7 @@ get_data_ft_api_term <-
     url_base <-
       'http://api.gdeltproject.org/api/v1/search_ftxtsearch/search_ftxtsearch?query='
 
-    if (term %>% is.na) {
+    if (term %>% is.na()) {
       term_slug <-
         ''
       term_word <-
@@ -163,7 +163,7 @@ get_data_ft_api_term <-
         ''
     }
 
-    if (dedeup_results == T) {
+    if (dedeup_results) {
       dup_slug <-
         '&dropdup=true'
     } else {
@@ -171,7 +171,7 @@ get_data_ft_api_term <-
         ''
     }
 
-    if (return_image_url == T) {
+    if (return_image_url) {
       image_slug <-
         '&output=artimglist'
     } else {
@@ -227,11 +227,38 @@ get_data_ft_api_term <-
       rvest::html_text() %>%
       str_trim()
 
-    url.source <-
+    if (return_image_url) {
+      url.source <-
       page %>%
       rvest::html_nodes(xpath = '//a') %>%
       rvest::html_attr('href') %>%
       .[c(T, F)]
+    } else {
+      url.source <-
+        page %>%
+        rvest::html_nodes(xpath = '//a') %>%
+        rvest::html_attr('href')
+    }
+
+    url.source <-
+      url.source %>%
+      str_split('\\(') %>%
+      flatten_chr %>%
+      str_replace_all('javascript:window.open','') %>%
+      str_replace_all('\\);','')
+
+
+    url.source <-
+      url.source[!url.source == '']
+
+    url.source <-
+      1:length(url.source) %>%
+      map_chr(function(x) {
+        char_url <-
+          url.source[x] %>% nchar()
+
+        url.source[x] %>% substr(start = 2, stop = char_url - 1)
+      })
 
     sources <-
       page %>%
@@ -250,7 +277,7 @@ get_data_ft_api_term <-
                   parse_source()) %>%
       suppressWarnings()
 
-    if (return_image_url == T) {
+    if (return_image_url) {
       urlThumbnail <-
         page %>%
         rvest::html_nodes(xpath = '//*[contains(concat( " ", @class, " " ), concat( " ", "thumbimg", " " ))]') %>%
@@ -259,7 +286,8 @@ get_data_ft_api_term <-
       urlThumbnail[urlThumbnail == ''] <-
         NA
 
-      url_df %<>%
+      url_df <-
+        url_df %>%
         mutate(urlThumbnail)
 
     }
