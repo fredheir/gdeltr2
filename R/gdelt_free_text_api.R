@@ -383,7 +383,7 @@ get_data_ft_api_terms <-
 
     all_data <-
       1:nrow(var_matrix) %>%
-      map_df(
+      purrr::map_df(
         function(x) {
           get_data_ft_api_term(
             term = var_matrix$term[x],
@@ -472,7 +472,7 @@ get_data_ft_api_domains <-
 
     all_data <-
       seq_len(var_matrix %>% nrow) %>%
-      map(
+      purrr::map_df(
         function(x)
           get_data_ft_api_term_safe(
             term = var_matrix$term[x],
@@ -489,8 +489,6 @@ get_data_ft_api_domains <-
           ) %>%
           suppressWarnings
       ) %>%
-      compact %>%
-      bind_rows %>%
       arrange(desc(dateTimeArticle))
 
     if (term %>% is.na()) {
@@ -780,7 +778,7 @@ get_data_wordcloud_ft_api_domains <-
 
     all_data <-
       seq_len(var_matrix %>% nrow) %>%
-      map(
+      purrr::map_df(
         function(x)
           get_data_wordcloud_ft_api_safe(
             term = var_matrix$term[x],
@@ -796,8 +794,6 @@ get_data_wordcloud_ft_api_domains <-
           ) %>%
           suppressWarnings()
       ) %>%
-      compact %>%
-      bind_rows %>%
       suppressWarnings()
 
     if (nest_data) {
@@ -871,7 +867,7 @@ get_data_wordcloud_ft_api_terms <-
 
     all_data <-
       seq_len(var_matrix %>% nrow) %>%
-      map(
+      purrr::map_df(
         function(x)
           get_data_wordcloud_ft_api_safe(
             term = var_matrix$term[x],
@@ -885,9 +881,7 @@ get_data_wordcloud_ft_api_terms <-
             dedeup_results = dedeup_results,
             return_message = return_message
           )
-      ) %>%
-      compact %>%
-      bind_rows
+      )
 
     if (nest_data) {
       all_data <-
@@ -1180,7 +1174,7 @@ get_data_sentiment_ft_api_domains <-
 
     all_data <-
       seq_len(var_matrix %>% nrow) %>%
-      map(
+      purrr::map_df(
         function(x)
           get_data_sentiment_ft_api_safe(
             term = var_matrix$term[x],
@@ -1196,9 +1190,7 @@ get_data_sentiment_ft_api_domains <-
             return_message = return_message
           ) %>%
           suppressMessages
-      ) %>%
-      compact %>%
-      bind_rows
+      )
 
     if (nest_data) {
       all_data <-
@@ -1264,7 +1256,7 @@ get_data_sentiment_ft_api_terms <-
 
     all_data <-
       seq_len(var_matrix %>% nrow) %>%
-      map(
+      purrr::map_df(
         function(x)
           get_data_sentiment_ft_api_safe(
             term = var_matrix$term[x],
@@ -1281,8 +1273,6 @@ get_data_sentiment_ft_api_terms <-
           ) %>%
           suppressMessages
       ) %>%
-      compact %>%
-      bind_rows %>%
       suppressWarnings()
 
     if (nest_data) {
@@ -1625,7 +1615,7 @@ get_data_locations_instability_api <-
 
     all_data <-
       seq_len(var_matrix %>% nrow) %>%
-      purrr::map(function(x) {
+      purrr::map_df((function(x) {
         get_data_location_instability_api_safe(
           location_id = var_matrix$id_location[x],
           variable_name = var_matrix$variable_name[x],
@@ -1636,9 +1626,7 @@ get_data_locations_instability_api <-
           return_message = return_message
         ) %>%
           suppressWarnings()
-      }) %>%
-      compact %>%
-      bind_rows
+      }))
 
     if (return_wide) {
       all_data <-
