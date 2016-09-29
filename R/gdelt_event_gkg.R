@@ -958,7 +958,8 @@ get_gdelt_url_data <-
            empty_trash = T,
            return_message = T) {
     use_tmp_file <-
-      file_directory %>% is_null
+      file_directory %>%
+      purrr::is_null()
 
     if (use_tmp_file) {
       tmp <-
@@ -1354,7 +1355,7 @@ get_gdelt_url_data <-
         unlink
     }  else {
       only_folder <-
-        !folder_name %>% is_null & file_directory %>% is_null
+        !folder_name %>% purrr::is_null() & file_directory %>% purrr::is_null()
       if (only_folder) {
         file_directory <-
           getwd()
@@ -4129,13 +4130,11 @@ get_data_gkg_day_detailed <-
 #' @importFrom purrr flatten_chr
 #' @importFrom tidyr extract_numeric
 #' @importFrom purrr compact
-#' @import dplyr
-#' @import utils
+#' @import dplyr utils dplyr purrr readr
 #' @importFrom urltools domain
 #' @importFrom curl curl_download curl
 #' @importFrom urltools domain
 #' @importFrom purrr map
-#' @import dplyr
 #' @return
 #' @export
 #'
@@ -4208,8 +4207,7 @@ get_data_gkg_days_detailed <- function(dates = c("2016-07-19"),
 #' @importFrom purrr flatten_chr
 #' @importFrom tidyr extract_numeric
 #' @importFrom purrr compact
-#' @import dplyr
-#' @import utils
+#' @import dplyr utils dplyr purrr readr
 #' @importFrom urltools domain
 #' @importFrom curl curl_download curl
 #' @return

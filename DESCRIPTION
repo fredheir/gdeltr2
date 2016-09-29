@@ -13,7 +13,10 @@ Depends:
     stringr,
     stringi,
     dplyr,
-    tidyr
+    tidyr,
+    purrr,
+    curl,
+    magrittr
 License: MIT + file LICENSE
 LazyData: TRUE
 Imports:
