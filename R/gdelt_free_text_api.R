@@ -1558,7 +1558,7 @@ get_data_location_instability_api <-
     if (period_name == "dateData") {
       data <-
         data %>%
-        mutate(dateData = dateData %>% ymd)
+        mutate(dateData = dateData %>% lubridate::ymd())
     } else {
       data <-
         data %>%
