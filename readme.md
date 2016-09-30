@@ -71,6 +71,9 @@ The data tidying functions begin with `parse_` and they apply to a number of the
     -   `get_data_wordcloud_ft_api_terms()` - retrieves wordcloud data for specified terms over the last 24 hours
     -   `get_data_sentiment_ft_api_domains()` - retrieves sentiment data for specified domains over the last 24 hours
     -   `get_data_sentiment_ft_api_terms()` - retrieves sentiment data for specified terms over the last 24 hours
+
+    -   `get_data_ft_trending_terms()` - retrieves trending terms over the last 15 minutes. The term can be a GDELT tag, location, person, place, or thing.
+
 -   <strong>[GDELT Events](http://gdeltproject.org/data.html#documentation)</strong>
     -   `get_urls_gdelt_event_log()` - retrieves descriptive data and urls for all available GDELT event downloads.
     -   `get_data_gdelt_period_event_totals()` - retrieves summary event data for a given a period \[monthly, daily, yearly\]; this can be grouped by country.
@@ -152,7 +155,7 @@ load_needed_packages(c('dplyr', 'magrittr'))
 
 ``` r
 test_terms <-
-  c('"Brooklyn Nets"', 'El Chapo', '"Hassan Whiteside"', '"EB5"', '"Toy Poodle"')
+  c('"Brooklyn Nets"', 'El Chapo', '"Hassan Whiteside"', '"EB5"', '"Toy Poodle"', "Gary Vaynerchuk")
 
 term_data <- 
   get_data_ft_api_terms(
@@ -174,7 +177,7 @@ test_domains <-
 domain_data <- 
   get_data_ft_api_domains(term = NA, domains = test_domains)
 
-nested_domains <- 
+nested_domains <-
   get_data_ft_api_domains(
     domains = c('netsdaily.com', 'washingtonpost.com', 'curbed.com'),
     nest_data = T
@@ -199,9 +202,6 @@ domain_sentiment <-
 events_1989 <-
   get_data_gdelt_periods_event(
     periods = 1989,
-    file_directory = 'Desktop/gkg_temp',
-    remove_files = T,
-    empty_trash = T,
     return_message = T
   )
 ```
@@ -213,9 +213,6 @@ gkg_summary_count_may_15_16_2014 <-
   get_data_gkg_days_summary(
     dates = c('2014-05-15', '2014-05-16'),
     is_count_file = T,
-    file_directory = 'Desktop/gkg_temp',
-    remove_files = T,
-    empty_trash = T,
     return_message = T
   )
 
@@ -223,9 +220,6 @@ gkg_full_june_2_2016 <-
   get_data_gkg_days_detailed(
     dates = c("2016-06-02"),
     table_name = 'gkg',
-    file_directory = 'Desktop/gkg_temp',
-    remove_files = T,
-    empty_trash = T,
     return_message = T
   )
 
@@ -233,9 +227,6 @@ gkg_mentions_may_12_2016 <-
   get_data_gkg_days_detailed(
     dates = c("2016-05-12"),
     table_name = 'mentions',
-    file_directory = 'Desktop/gkg_temp',
-    remove_files = T,
-    empty_trash = T,
     return_message = T
   )
 ```
