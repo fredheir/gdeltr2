@@ -251,7 +251,8 @@ get_data_ft_api_term <-
     url.source <-
       url.source[!url.source == '']
 
-    url.source <-
+    if (!return_image_url) {
+      url.source <-
       1:length(url.source) %>%
       map_chr(function(x) {
         char_url <-
@@ -259,6 +260,7 @@ get_data_ft_api_term <-
 
         url.source[x] %>% substr(start = 2, stop = char_url - 1)
       })
+    }
 
     sources <-
       page %>%
