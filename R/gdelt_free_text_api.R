@@ -26,7 +26,7 @@ parse_source <-
   }
 
 get_data_ft_api_term <-
-  function(term = '"Brooklyn Nets"',
+  function(term = "'Donald Trump'",
            domain = NA,
            dedeup_results = T,
            restrict_to_usa = F,
@@ -242,11 +242,9 @@ get_data_ft_api_term <-
 
     url.source <-
       url.source %>%
-      str_split('\\(') %>%
+      str_split('\\javascript:window.open') %>%
       flatten_chr %>%
-      str_replace_all('javascript:window.open','') %>%
       str_replace_all('\\);','')
-
 
     url.source <-
       url.source[!url.source == '']
@@ -258,7 +256,7 @@ get_data_ft_api_term <-
         char_url <-
           url.source[x] %>% nchar()
 
-        url.source[x] %>% substr(start = 2, stop = char_url - 1)
+        url.source[x] %>% substr(start = 3, stop = char_url - 1)
       })
     }
 
@@ -266,6 +264,12 @@ get_data_ft_api_term <-
       page %>%
       rvest::html_nodes(xpath = '//*[contains(concat( " ", @class, " " ), concat( " ", "sourceinfo", " " ))]') %>%
       rvest::html_text()
+    wrong_length <-
+      url.source %>% length() > sources %>% length()
+    if (wrong_length) {
+      url.source <-
+        url.source[1:length(sources)]
+    }
 
     url_df <-
       data_frame(
