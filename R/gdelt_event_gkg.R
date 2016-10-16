@@ -2074,7 +2074,7 @@ parse_gkg_mentioned_numerics <- function(gdelt_data,
 
           field_data <-
             field_data %>%
-            dplyr::mutate_each_(funs(extract_numeric(.)),
+            dplyr::mutate_each_(funs(readr::parse_number(.)),
                                 vars =
                                   field_data %>% dplyr::select(matches('amountValue|charLoc')) %>% names)
         } else {
@@ -2228,7 +2228,7 @@ parse_gkg_mentioned_people <- function(gdelt_data,
 
           field_data <-
             field_data %>%
-            dplyr::mutate_each_(funs(extract_numeric(.)),
+            dplyr::mutate_each_(funs(readr::parse_number(.)),
                                 vars =
                                   field_data %>% dplyr::select(matches('charLoc')) %>% names)
         } else {
@@ -2388,7 +2388,7 @@ parse_gkg_mentioned_organizations <- function(gdelt_data,
 
           field_data <-
             field_data %>%
-            dplyr::mutate_each_(funs(extract_numeric(.)),
+            dplyr::mutate_each_(funs(readr::parse_number(.)),
                                 vars =
                                   field_data %>% dplyr::select(matches('charLoc')) %>% names)
         } else {
@@ -2521,7 +2521,7 @@ parse_gkg_mentioned_names <- function(gdelt_data,
 
           field_data <-
             field_data %>%
-            dplyr::mutate_each_(funs(extract_numeric(.)),
+            dplyr::mutate_each_(funs(readr::parse_number(.)),
                                 vars =
                                   field_data %>% dplyr::select(matches('charLoc')) %>% names)
         } else {
@@ -2669,7 +2669,7 @@ parse_gkg_mentioned_themes <- function(gdelt_data,
 
           field_data <-
             field_data %>%
-            dplyr::mutate_each_(funs(extract_numeric(.)),
+            dplyr::mutate_each_(funs(readr::parse_number(.)),
                                 vars =
                                   field_data %>% dplyr::select(matches('charLoc')) %>% names)
         } else {
@@ -3756,7 +3756,7 @@ parse_gkg_mentioned_gcams <- function(gdelt_data,
 
         articleWordCount <-
           fields[1] %>%
-          extract_numeric()
+          readr::parse_number()
 
         fields_df <-
           data_frame(articleWordCount,
@@ -4100,7 +4100,7 @@ get_data_gkg_day_detailed <-
 #' @param return_message Do you want to return a message
 #' \code{T, F}
 #' @importFrom purrr flatten_chr
-#' @importFrom tidyr extract_numeric
+#' @importFrom readr parse_number
 #' @importFrom purrr compact
 #' @import dplyr utils dplyr purrr readr
 #' @importFrom urltools domain
@@ -4175,7 +4175,7 @@ get_data_gkg_days_detailed <- function(dates = c("2016-07-19"),
 #' @param return_message
 #' \code{c(TRUE, FALSE)}
 #' @importFrom purrr flatten_chr
-#' @importFrom tidyr extract_numeric
+#' @importFrom readr parse_number
 #' @importFrom purrr compact
 #' @import dplyr utils dplyr purrr readr
 #' @importFrom urltools domain
@@ -4339,7 +4339,7 @@ get_data_gkg_days_summary <- function(dates = c("2016-06-01"),
 #' @param return_message
 #' @importFrom purrr compact
 #' @importFrom purrr flatten_chr
-#' @importFrom tidyr extract_numeric
+#' @importFrom readr parse_number
 #' @importFrom purrr compact
 #' @import dplyr
 #' @import utils
@@ -4540,11 +4540,18 @@ get_urls_vgkg_most_recent  <- function() {
   names(log_df) <-
     c('value')
 
+  values <-
+    log_df$value %>% str_split("\\ ") %>%
+    flatten_chr
+
+
+  items <-
+    c('idVGKPeriod', 'idVGKHash', 'urlCloudVisionTags')
+
   log_df <-
-    log_df %>%
-    mutate(item = c('urlCloudVisionTags', 'urlTranslationTags')) %>%
+    data_frame(item = items, value = values) %>%
     spread(item, value) %>%
-    mutate()
+    mutate(idVGKPeriod = idVGKPeriod %>% as.numeric())
 
   return(log_df)
 }
@@ -4558,8 +4565,6 @@ get_data_vgkg_url <-
     if (ok_url == FALSE) {
       stop("Invalid url")
     }
-
-
     cloud_vision_data <-
       url %>%
       curl::curl %>%
@@ -4577,8 +4582,8 @@ get_data_vgkg_url <-
         idDateTime = 1:n(),
         idVGKG = dateTimeDocument %>% paste0('-', idDateTime),
         dateTimeDocument = dateTimeDocument %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone()),
-        dateDocument = dateTimeDocument %>% as.Date,
-        dimWidthHeight = dimWidthHeight %>% tidyr::extract_numeric
+        dateDocument = dateTimeDocument %>% as.Date(),
+        dimWidthHeight = dimWidthHeight %>% readr::parse_number()
       ) %>%
       dplyr::select(idVGKG, idDateTime, everything())
 
@@ -4612,7 +4617,6 @@ get_data_vgkg_day <-
     date_data <-
       date_data %>%
       ymd %>% as.Date()
-
 
     if (date_data < "2016-02-22") {
       stop("Sorry data starts on February 22, 2016")
