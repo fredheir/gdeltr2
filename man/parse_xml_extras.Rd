@@ -2,15 +2,14 @@
 % Please edit documentation in R/gdelt_event_gkg.R
 \name{parse_xml_extras}
 \alias{parse_xml_extras}
-\title{Parse XML Labels}
+\title{Parse XML Extra}
 \usage{
-parse_xml_extras(data,
-  id_gkg = "20160601010000-BLOOMBERG_20160601_010000_Trending_Business")
+parse_xml_extras(data, return_wide = FALSE)
 }
 \arguments{
-\item{id_dateTime}{}
+\item{return_wide}{}
 }
 \description{
-Parse XML Labels
+Parse XML Extra
 }
 

@@ -1063,7 +1063,7 @@ get_gdelt_url_data <-
           dplyr::mutate(
             dateEvent = dateEvent %>% lubridate::ymd,
             dateTimeDocument = dateTimeDocument %>% ymd_hms() %>% lubridate::with_tz(Sys.timezone()),
-            nameSource = urlSource %>% domain() %>% str_replace_all("www.", '')
+            nameSource = urlSource %>% urltools::domain() %>% str_replace_all("www.", '')
           )
 
         gdelt_data <-
@@ -1255,7 +1255,7 @@ get_gdelt_url_data <-
             dateEvent = dateEvent %>% lubridate::ymd,
             dateTimeDocument %>% lubridate::ymd_hms() %>% lubridate::with_tz(Sys.timezone()),
             dateDocument = dateTimeDocument %>% as.Date(),
-            nameSource = urlSource %>% domain() %>% str_replace_all("www.", '')
+            nameSource = urlSource %>% urltools::domain() %>% str_replace_all("www.", '')
           ) %>%
           suppressWarnings()
 
@@ -1342,7 +1342,7 @@ get_gdelt_url_data <-
             idDateTimeArticle = idDateTimeArticle %>% as.numeric,
             domainSource = if_else(
               isDocumentURL == T,
-              documentSource %>% urltools::domain,
+              documentSource %>% urltools::domain(),
               nameSource
             )
           ) %>%
@@ -4019,7 +4019,7 @@ get_data_gkg_day_detailed <-
 
   date_data <-
     date_data %>%
-    ymd %>% as.Date()
+    ymd() %>% as.Date()
 
 
   if (date_data < "2015-02-18") {
@@ -4075,7 +4075,7 @@ get_data_gkg_day_detailed <-
 
   all_data <-
     all_data %>%
-    mutate(domainSource = documentSource %>% urltools::domain)
+    mutate(domainSource = documentSource %>% urltools::domain())
 
   if (return_message) {
     "You retrieved " %>%
@@ -4581,7 +4581,7 @@ get_data_vgkg_url <-
         dateCodeURL = dateTimeDocument,
         idDateTime = 1:n(),
         idVGKG = dateTimeDocument %>% paste0('-', idDateTime),
-        dateTimeDocument = dateTimeDocument %>% lubridate::ymd_hms() %>% with_tz(Sys.timezone()),
+        dateTimeDocument = dateTimeDocument %>% lubridate::ymd_hms() %>% lubridate::with_tz(Sys.timezone()),
         dateDocument = dateTimeDocument %>% as.Date(),
         dimWidthHeight = dimWidthHeight %>% readr::parse_number()
       ) %>%
@@ -4737,173 +4737,125 @@ get_data_vgkg_dates <-
 
     all_data <-
       all_data %>%
-      mutate(domainSource = documentSource %>% urltools::domain) %>%
+      mutate(domainSource = documentSource %>% urltools::domain()) %>%
       dplyr::select(idVGKG:dateTimeDocument, domainSource, everything())
     return(all_data)
 
   }
 
-#' Parse XML Labels
+parse_xml_extra <-
+  function(x =  "<PAGE_LINKS>http://therealdeal.com/2015/05/07/hfz-secures-1b-in-financing-for-high-line-site/;http://therealdeal.com/2015/09/10/uk-hedge-fund-loaning-850m-for-relateds-hudson-yards-resi-tower/;http://therealdeal.com/2016/02/05/hfz-seeks-250m-from-eb-5-investors-for-high-line-condos/;http://therealdeal.com/2016/07/28/macklowe-seeking-1b-loan-for-1-wall-street-conversion/;http://therealdeal.com/2016/08/18/first-look-floor-plans-at-hfzs-high-line-development/;http://therealdeal.com/2016/10/05/inside-gary-barnetts-game-of-real-estate-tetris/;http://therealdeal.com/2016/10/06/six-senses-to-open-hotel-at-hfzs-high-line-project/;http://therealdeal.com/issues_articles/whos-bankrolling-the-boom/;http://therealdeal.com/issues_articles/ziel-feldman-it-was-worth-every-penny/</PAGE_LINKS><PAGE_PRECISEPUBTIMESTAMP>20161025180000</PAGE_PRECISEPUBTIMESTAMP>") {
+
+    safe_xml <-
+      purrr::possibly(read_xml, otherwise = NULL)
+
+    gdelt_xml <-
+      list("<item>", x, "</item>") %>%
+      purrr::invoke(paste0, .) %>%
+      safe_xml()
+
+    if(gdelt_xml %>% length > 0) {
+
+      values <-
+        gdelt_xml %>%
+        xml2::xml_children() %>%
+        rvest::html_text()
+
+      items <-
+        gdelt_xml %>%
+        xml2::xml_children() %>%
+        xml2::xml_name()
+
+      xml_df <-
+        data_frame(item = items, value = values)
+
+      xml_df <-
+        xml_df$item %>%
+        unique %>%
+        purrr::map_df(function(x) {
+          item_value <-
+            xml_df %>%
+            filter(item == x) %>%
+            .$value %>%
+            str_split('\\;') %>%
+            flatten_chr()
+
+          data_frame(item = x, value = item_value) %>%
+            group_by(item) %>%
+            mutate(idXMLItem = 1:length(item)) %>%
+            ungroup() %>%
+            dplyr::select(idXMLItem, item, value)
+        })
+    } else {
+      xml_df <-
+        data_frame()
+    }
+    return(xml_df)
+  }
+
+
+#' Parse XML Extra
 #'
 #' @param data
-#' @param id_dateTime
+#' @param return_wide
 #'
 #' @return
-#' @import dplyr
-#' @import tidyr
-#' @import xml2
-#' @importFrom purrr safely
-#' @importfrom string str_detect
+#' @import xml2 purrr dplyr tidyr
+#' @return
+#' @export
 #'
 #' @examples
 parse_xml_extras <-
-  function(data, id_gkg = "20160601010000-BLOOMBERG_20160601_010000_Trending_Business") {
-    xmlData <-
+  function(data, return_wide = FALSE) {
+    xml_data <-
       data %>%
-      dplyr::filter(idGKG == id_gkg) %>%
-      .$xmlExtras
+      filter(!xmlExtras %>% is.na()) %>%
+      select(idGKG, xmlExtras)
+    parse_xml_extra_safe <-
+      possibly(parse_xml_extra, NULL)
 
+    xml_extra_df <-
+      1:nrow(xml_data) %>%
+      map_df(function(x) {
+        row_data <-
+          xml_data %>%
+          slice(x)
 
-    if (xmlData %>% is.na()) {
-      xml_df <-
-        data_frame(idGKG = id_gkg)
-    } else {
-      safely_read_xml <-
-        safely(read_xml)
+        has_data <-
+          row_data$xmlExtras %>%
+          parse_xml_extra_safe() %>% nrow() > 0
 
-      xml_results <-
-        "<article_xml>" %>%
-        paste0(xmlData, "</article_xml>") %>%
-        safely_read_xml()
-
-      if (xml_results$result %>% is.null()) {
-        xml_df <-
-          data_frame(idGKG = id_gkg)
-      } else {
-        items <-
-          xml_results[[1]] %>% xml_children() %>% xml_name %>% str_to_lower()
-
-        values <-
-          xml_results[[1]] %>% xml_children() %>% xml_text()
-
-        xml_df <-
-          data_frame(idGKG = id_gkg,
-                     item = items,
-                     value = values)
-
-        splitCt <-
-          xmlData %>% str_count('\\;')
-
-        names_vals <-
-          seq_len(splitCt) %>% paste0('v', .)
-
-        xml_df <-
-          xml_df %>%
-          separate(value, into = names_vals, sep = '\\;') %>%
-          gather(val, value, -c(item, idGKG), na.rm = T) %>%
-          dplyr::select(-val) %>%
-          group_by(item) %>%
-          mutate(idXMLItem = 1:n() - 1) %>%
-          dplyr::select(idGKG, idXMLItem, item, value) %>%
-          ungroup %>%
-          arrange(item) %>%
-          mutate(item = ifelse(idXMLItem == 0, item, item %>% paste0(idXMLItem))) %>%
-          dplyr::select(-idXMLItem) %>%
-          mutate(value = ifelse(
-            value %in% c('', '\\*', '(required)', "\\'", "*", "'", "→", "{", "-"),
-            NA,
-            value
-          )) %>%
-          dplyr::filter(!value %>% is.na()) %>%
-          suppressWarnings()
-
-        if (xml_df$value[1] %>% str_detect(":")) {
+        if (has_data) {
           xml_df <-
-            xml_df %>%
-            separate(value, into = c('charLoc', 'timeLoc'), '\\:') %>%
-            mutate(charLoc = charLoc %>% as.numeric,
-                   timeLoc = timeLoc %>% as.numeric) %>%
-            dplyr::select(-item) %>%
-            gather(item, value, -c(idGKG), na.rm = T) %>%
-            group_by(item) %>%
-            mutate(idXMLItem = 1:n() - 1) %>%
-            dplyr::select(idGKG, idXMLItem, item, value) %>%
-            ungroup %>%
-            arrange(item) %>%
-            mutate(item = ifelse(idXMLItem == 0, item, item %>% paste0(idXMLItem))) %>%
-            dplyr::select(-idXMLItem) %>%
-            mutate(value = ifelse(
-              value %in% c('', '\\*', '(required)', "\\'", "*", "'", "→", "{", "-"),
-              NA,
-              value
-            )) %>%
-            dplyr::filter(!value %>% is.na()) %>%
-            suppressWarnings()
+            row_data$xmlExtras %>%
+            parse_xml_extra_safe() %>%
+            mutate(idGKG = row_data$idGKG) %>%
+            dplyr::select(idGKG, everything())
+          return(xml_df)
         }
+      })
 
+    xml_extra_df <-
+      xml_extra_df %>%
+      mutate(value = ifelse(
+        value %in% c('', '\\*', '(required)', "\\'", "*", "'", "→", "{", "-"),
+        NA,
+        value
+      )) %>%
+      dplyr::filter(!value %>% is.na()) %>%
+      suppressWarnings()
 
-      }
+    if (return_wide) {
+      xml_extra_df <-
+        xml_extra_df %>%
+        mutate(idXMLItem = idXMLItem - 1,
+               item = ifelse(idXMLItem > 0, paste0(item, idXMLItem), item)) %>%
+        dplyr::select(-idXMLItem) %>%
+        spread(item, value)
     }
 
-    return(xml_df)
-
+    return(xml_extra_df)
   }
-
-#' Parses XML Extras
-#'
-#' @param gdelt_data
-#' @param filter_na
-#' @param return_wide
-#' @import xml2
-#' @return
-#' @export
-#' @importFrom purrr compact map_df
-#' @examples
-parse_gkg_xml_extras <- function(gdelt_data,
-                                 filter_na = T,
-                                 return_wide = F) {
-  parse_xml_extras_safe <-
-    failwith(NULL, parse_xml_extras)
-
-  allxmlLabels <-
-    gdelt_data$idGKG %>%
-    purrr::map_df(function(x) {
-      parse_xml_extras_safe(data = gdelt_data, id_gkg = x)
-    }) %>%
-    suppressWarnings() %>%
-    separate(
-      idGKG,
-      into = c('gkg', 'dateTime'),
-      sep = '\\-',
-      remove = F
-    ) %>%
-    mutate(dateTime = dateTime %>% as.numeric) %>%
-    arrange(dateTime) %>%
-    dplyr::select(-c(gkg, dateTime))
-
-  if (filter_na) {
-    allxmlLabels <-
-      allxmlLabels %>%
-      dplyr::filter(!item %>% is.na())
-  }
-
-  if (return_wide) {
-    allxmlLabels <-
-      allxmlLabels %>%
-      spread(item, value) %>%
-      separate(
-        idGKG,
-        into = c('gkg', 'dateTime'),
-        sep = '\\-',
-        remove = F
-      ) %>%
-      mutate(dateTime = dateTime %>% as.numeric) %>%
-      arrange(dateTime) %>%
-      dplyr::select(-c(gkg, dateTime))
-  }
-
-  return(allxmlLabels)
-}
 
 #' Parse XML Labels
 #'
