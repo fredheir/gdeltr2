@@ -2750,160 +2750,162 @@ parse_gkg_mentioned_themes <- function(gdelt_data,
 #'
 #' @examples
 
-parse_gkg_mentioned_social_embeds <- function(gdelt_data,
-                                              social_embed_column = 'urlSocialMediaImageEmbeds',
-                                              filter_na = T,
-                                              return_wide = T) {
-  image_video_cols <-
-    c(
-      'urlSocialMediaImageEmbeds',
-      'images',
-      'image',
-      'urlSocialMediaVideoEmbeds',
-      'video',
-      'videos'
-    )
-  if (!social_embed_column %in% image_video_cols) {
-    stop("Social embed column can only be\n" %>% paste0(paste0(image_video_cols, collapse = '\n')))
-  }
-
-  if (social_embed_column %in% c("image", "images")) {
-    social_embed_column <-
-      'urlSocialMediaImageEmbeds'
-  }
-
-  if (social_embed_column  %in% c("video", "videos")) {
-    social_embed_column <-
-      'urlSocialMediaVideoEmbeds'
-  }
-  parse_embeds <-
-    function(field = "http://instagram.com/p/9YfHJtMx0N;http://instagram.com/p/BFz1t7Tsx8t;http://instagram.com/p/BEZrBSKsx8U;http://instagram.com/p/BEw5_T-Mx3B;",
-             return_wide = F) {
-      options(scipen = 99999)
-      if (field %>% is.na) {
-        if (return_wide) {
-          field_data <-
-            data_frame(urlSocialMediaImageEmbed = NA)
-        } else {
-          field_data <-
-            data_frame(
-              urlSocialMediaImageEmbed = NA,
-              idArticleSocialMediaImageEmbed = 1
-            )
-        }
-      }  else {
-        fields <-
-          field %>%
-          str_split('\\;') %>%
-          flatten_chr() %>%
-          .[!. %in% '']
-
-        fields_df <-
-          data_frame(urlSocialMediaImageEmbed = fields) %>%
-          dplyr::mutate(
-            idArticleSocialMediaImageEmbed = 1:n(),
-            domainSocialMediaImageEmbed = urlSocialMediaImageEmbed %>% urltools::domain()
-          )
-        if (return_wide) {
-          fields_df <-
-            fields_df %>%
-            gather(item, value, -idArticleSocialMediaImageEmbed) %>%
-            arrange(idArticleSocialMediaImageEmbed) %>%
-            unite(item, item, idArticleSocialMediaImageEmbed, sep = '.')
-
-          order_fields <-
-            fields_df$item
-
-          field_data <-
-            fields_df %>%
-            spread(item, value) %>%
-            dplyr::select_(.dots = order_fields)
-
-        } else {
-          field_data <-
-            fields_df
-
-          field_data <-
-            field_data %>%
-            dplyr::select(
-              idArticleSocialMediaImageEmbed,
-              domainSocialMediaImageEmbed,
-              urlSocialMediaImageEmbed
-            )
-        }
-      }
-
-      return(field_data)
+parse_gkg_mentioned_social_embeds <-
+  function(gdelt_data,
+           social_embed_column = 'urlSocialMediaImageEmbeds',
+           filter_na = T,
+           return_wide = T) {
+    image_video_cols <-
+      c(
+        'urlSocialMediaImageEmbeds',
+        'images',
+        'image',
+        'urlSocialMediaVideoEmbeds',
+        'video',
+        'videos'
+      )
+    if (!social_embed_column %in% image_video_cols) {
+      stop("Social embed column can only be\n" %>% paste0(paste0(image_video_cols, collapse = '\n')))
     }
 
+    if (social_embed_column %in% c("image", "images")) {
+      social_embed_column <-
+        'urlSocialMediaImageEmbeds'
+    }
 
-  if (!social_embed_column %in% names(gdelt_data)) {
-    stop("Sorry missing source embed column")
-  }
+    if (social_embed_column  %in% c("video", "videos")) {
+      social_embed_column <-
+        'urlSocialMediaVideoEmbeds'
+    }
+    parse_embeds <-
+      function(field = "http://instagram.com/p/9YfHJtMx0N;http://instagram.com/p/BFz1t7Tsx8t;http://instagram.com/p/BEZrBSKsx8U;http://instagram.com/p/BEw5_T-Mx3B;",
+               return_wide = F) {
+        options(scipen = 99999)
+        if (field %>% is.na) {
+          if (return_wide) {
+            field_data <-
+              data_frame(urlSocialMediaImageEmbed = NA)
+          } else {
+            field_data <-
+              data_frame(
+                urlSocialMediaImageEmbed = NA,
+                idArticleSocialMediaImageEmbed = 1
+              )
+          }
+        }  else {
+          fields <-
+            field %>%
+            str_split('\\;') %>%
+            flatten_chr() %>%
+            .[!. %in% '']
 
-  col_names <-
-    c('idGKG', social_embed_column)
+          fields_df <-
+            data_frame(urlSocialMediaImageEmbed = fields) %>%
+            dplyr::mutate(
+              idArticleSocialMediaImageEmbed = 1:n(),
+              domainSocialMediaImageEmbed = urlSocialMediaImageEmbed %>% urltools::domain()
+            )
+          if (return_wide) {
+            fields_df <-
+              fields_df %>%
+              gather(item, value, -idArticleSocialMediaImageEmbed) %>%
+              arrange(idArticleSocialMediaImageEmbed) %>%
+              unite(item, item, idArticleSocialMediaImageEmbed, sep = '.')
 
-  counts_data <-
-    gdelt_data %>%
-    dplyr::select_(.dots = col_names)
+            order_fields <-
+              fields_df$item
 
-  names(counts_data)[2] <-
-    'source_col'
+            field_data <-
+              fields_df %>%
+              spread(item, value) %>%
+              dplyr::select_(.dots = order_fields)
 
-  if (filter_na) {
+          } else {
+            field_data <-
+              fields_df
+
+            field_data <-
+              field_data %>%
+              dplyr::select(
+                idArticleSocialMediaImageEmbed,
+                domainSocialMediaImageEmbed,
+                urlSocialMediaImageEmbed
+              )
+          }
+        }
+
+        return(field_data)
+      }
+
+    if (!social_embed_column %in% names(gdelt_data)) {
+      stop("Sorry missing source embed column")
+    }
+
+    col_names <-
+      c('idGKG', social_embed_column)
+
     counts_data <-
-      counts_data %>%
-      dplyr::filter(!source_col %>% is.na())
-  }
+      gdelt_data %>%
+      dplyr::select_(.dots = col_names)
 
-  all_counts <-
-    1:length(counts_data$source_col) %>%
-    purrr::map_df(function(x) {
-      parse_embeds(field = counts_data$source_col[x],
-                   return_wide = F) %>%
-        dplyr::mutate(idGKG = counts_data$idGKG[x])
-    })
+    names(counts_data)[2] <-
+      'source_col'
 
-  names(all_counts)[1] <-
-    'idColumn'
+    if (filter_na) {
+      counts_data <-
+        counts_data %>%
+        dplyr::filter(!source_col %>% is.na())
+    }
 
-  if (social_embed_column == 'urlSocialMediaImageEmbeds') {
-    names(all_counts)[3] <-
-      c('urlSocialMediaImage.embed')
+    all_counts <-
+      1:length(counts_data$source_col) %>%
+      purrr::map_df(function(x) {
+        parse_embeds(field = counts_data$source_col[x],
+                     return_wide = F) %>%
+          dplyr::mutate(idGKG = counts_data$idGKG[x])
+      })
 
     names(all_counts)[1] <-
-      c('idArticleSocialMediaImageEmbed')
+      'idColumn'
+
+    if (social_embed_column == 'urlSocialMediaImageEmbeds') {
+      names(all_counts)[3] <-
+        c('urlSocialMediaImage.embed')
+
+      names(all_counts)[1] <-
+        c('idArticleSocialMediaImageEmbed')
+    }
+
+    if (social_embed_column == 'urlSocialMediaVideoEmbeds') {
+      names(all_counts)[3] <-
+        c('urlSocialMediaVideo.embed')
+      names(all_counts)[1] <-
+        c('idArticle.social_media.video_embed')
+    }
+
+    all_counts <-
+      all_counts %>%
+      dplyr::select(matches("id^[A-Z]"), everything())
+
+    id_col <-
+      all_counts %>% select(matches("^id[A-Z]")) %>% names() %>% .[[1]] %>% suppressWarnings()
+    all_counts <-
+      all_counts %>%
+      get_clean_count_data(count_col = id_col, return_wide = return_wide) %>%
+      separate(
+        idGKG,
+        into = c('GKG', 'dateTime'),
+        sep = '\\-',
+        remove = F
+      ) %>%
+      mutate(dateTime = dateTime %>% as.numeric) %>%
+      arrange(dateTime) %>%
+      dplyr::select(-c(dateTime, GKG)) %>%
+      suppressWarnings()
+
+
+    return(all_counts)
   }
-
-  if (social_embed_column == 'urlSocialMediaVideoEmbeds') {
-    names(all_counts)[3] <-
-      c('urlSocialMediaVideo.embed')
-    names(all_counts)[1] <-
-      c('idArticle.social_media.video_embed')
-  }
-
-  all_counts <-
-    all_counts %>%
-    dplyr::select(idColumn, everything())
-
-  all_counts <-
-    all_counts %>%
-    get_clean_count_data(count_col = 'idColumn', return_wide = return_wide) %>%
-    separate(
-      idGKG,
-      into = c('GKG', 'dateTime'),
-      sep = '\\-',
-      remove = F
-    ) %>%
-    mutate(dateTime = dateTime %>% as.numeric) %>%
-    arrange(dateTime) %>%
-    dplyr::select(-c(dateTime, GKG)) %>%
-    suppressWarnings()
-
-
-  return(all_counts)
-}
 
 #' Returns article tones from a gkg data frame
 #'
