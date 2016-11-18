@@ -1355,7 +1355,8 @@ get_gdelt_url_data <-
         unlink
     }  else {
       only_folder <-
-        !folder_name %>% purrr::is_null() & file_directory %>% purrr::is_null()
+        !folder_name %>% purrr::is_null() &
+        file_directory %>% purrr::is_null()
       if (only_folder) {
         file_directory <-
           getwd()
@@ -3553,7 +3554,7 @@ parse_gkg_mentioned_dates <- function(gdelt_data,
     gdelt_data %>%
     dplyr::select(idGKG, dates)
 
-  if (filter_na ) {
+  if (filter_na) {
     counts_data <-
       counts_data %>%
       dplyr::filter(!dates %>% is.na)
@@ -4002,89 +4003,88 @@ get_data_gkg_day_detailed <-
            remove_files = T,
            empty_trash = T,
            return_message = T) {
-
-  if (only_most_recent) {
-    date_data <-
-      Sys.Date()
-  }
-
-  if (!date_data %>% substr(5, 5) == "-") {
-    stop("Sorry data must be in YMD format, ie, 2016-06-01")
-  }
-  tables <-
-    c('gkg', 'export', 'mentions')
-  if (!table_name %in% tables) {
-    stop("Sorry tables can only be:\n" %>% paste0(paste0(tables, collapse = '\n')))
-  }
-
-  date_data <-
-    date_data %>%
-    ymd() %>% as.Date()
-
-
-  if (date_data < "2015-02-18") {
-    stop("Sorry data starts on February 18th, 2015")
-  }
-
-  if (date_data > Sys.Date()) {
-    stop("Sorry data can't go into the future")
-  }
-
-  if (only_most_recent) {
-    gdelt_detailed_logs <-
-      get_urls_gkg_most_recent_log()
-    urls <-
-      gdelt_detailed_logs %>%
-      dplyr::filter(nameFile == table_name) %>%
-      .$urlData
-  } else {
-    if (!'gdelt_detailed_logs' %>% exists) {
-      paste(
-        "To save memory and time next time you should run the function get_urls_gkg_15_minute_log and save to data frame called gdelt_detailed_logs"
-      ) %>%
-        message
-      gdelt_detailed_logs <-
-        get_urls_gkg_15_minute_log()
+    if (only_most_recent) {
+      date_data <-
+        Sys.Date()
     }
 
-    urls <-
-      gdelt_detailed_logs %>%
-      dplyr::filter(dateData == date_data) %>%
-      dplyr::filter(nameFile == table_name) %>%
-      .$urlData
+    if (!date_data %>% substr(5, 5) == "-") {
+      stop("Sorry data must be in YMD format, ie, 2016-06-01")
+    }
+    tables <-
+      c('gkg', 'export', 'mentions')
+    if (!table_name %in% tables) {
+      stop("Sorry tables can only be:\n" %>% paste0(paste0(tables, collapse = '\n')))
+    }
+
+    date_data <-
+      date_data %>%
+      ymd() %>% as.Date()
+
+
+    if (date_data < "2015-02-18") {
+      stop("Sorry data starts on February 18th, 2015")
+    }
+
+    if (date_data > Sys.Date()) {
+      stop("Sorry data can't go into the future")
+    }
+
+    if (only_most_recent) {
+      gdelt_detailed_logs <-
+        get_urls_gkg_most_recent_log()
+      urls <-
+        gdelt_detailed_logs %>%
+        dplyr::filter(nameFile == table_name) %>%
+        .$urlData
+    } else {
+      if (!'gdelt_detailed_logs' %>% exists) {
+        paste(
+          "To save memory and time next time you should run the function get_urls_gkg_15_minute_log and save to data frame called gdelt_detailed_logs"
+        ) %>%
+          message
+        gdelt_detailed_logs <-
+          get_urls_gkg_15_minute_log()
+      }
+
+      urls <-
+        gdelt_detailed_logs %>%
+        dplyr::filter(dateData == date_data) %>%
+        dplyr::filter(nameFile == table_name) %>%
+        .$urlData
+    }
+
+    get_gdelt_url_data_safe <-
+      failwith(NULL, get_gdelt_url_data)
+
+    all_data <-
+      urls %>%
+      purrr::map_df(function(x) {
+        get_gdelt_url_data_safe(
+          url = x,
+          remove_files = remove_files,
+          file_directory = file_directory,
+          folder_name = folder_name,
+          return_message = return_message,
+          empty_trash = empty_trash
+        )
+      }) %>%
+      distinct() %>%
+      suppressMessages() %>%
+      suppressWarnings()
+
+    all_data <-
+      all_data %>%
+      mutate(domainSource = documentSource %>% urltools::domain())
+
+    if (return_message) {
+      "You retrieved " %>%
+        paste0(all_data %>% nrow, " gkg detailed events for ", date_data) %>%
+        message()
+    }
+
+    return(all_data)
   }
-
-  get_gdelt_url_data_safe <-
-    failwith(NULL, get_gdelt_url_data)
-
-  all_data <-
-    urls %>%
-    purrr::map_df(function(x) {
-      get_gdelt_url_data_safe(
-        url = x,
-        remove_files = remove_files,
-        file_directory = file_directory,
-        folder_name = folder_name,
-        return_message = return_message,
-        empty_trash = empty_trash
-      )
-    }) %>%
-    distinct() %>%
-    suppressMessages() %>%
-    suppressWarnings()
-
-  all_data <-
-    all_data %>%
-    mutate(domainSource = documentSource %>% urltools::domain())
-
-  if (return_message) {
-    "You retrieved " %>%
-      paste0(all_data %>% nrow, " gkg detailed events for ", date_data) %>%
-      message()
-  }
-
-  return(all_data)
-}
 
 
 #' Get dates detailed data from a specified table
@@ -4293,7 +4293,7 @@ get_data_gkg_day_summary <- function(date_data = "2016-06-01",
 #' get_data_gkg_days_summary(dates = c("2016-07-18"), is_count_file = c(T, F))
 
 get_data_gkg_days_summary <- function(dates = c("2016-06-01"),
-                                      is_count_file = c(T,F),
+                                      is_count_file = c(T, F),
                                       file_directory = NULL,
                                       folder_name = 'gdelt_data',
                                       remove_files = T,
@@ -4304,9 +4304,11 @@ get_data_gkg_days_summary <- function(dates = c("2016-06-01"),
     failwith(NULL, get_data_gkg_day_summary)
 
   var_matrix <-
-    expand.grid(date = dates,
-                is_count_file = is_count_file,
-                stringsAsFactors = F) %>%
+    expand.grid(
+      date = dates,
+      is_count_file = is_count_file,
+      stringsAsFactors = F
+    ) %>%
     as_data_frame %>%
     suppressWarnings()
 
@@ -4514,8 +4516,8 @@ get_urls_vgkg <- function() {
     data_frame(
       dateTimeData = all_dates,
       isoPeriod = dateTimeData %>% format("%Y%m%d%H%M%S") %>% as.numeric(),
-      urlCloudVisionTags = 'http://data.gdeltproject.org/gdeltv2_cloudvision/' %>% paste0(isoPeriod, '.imagetagsv1.csv.gz'),
-      urlTranslationTags = 'http://data.gdeltproject.org/gdeltv2_cloudvision/' %>% paste0(isoPeriod, '.translation.imagetagsv1.csv.gz')
+      urlCloudVisionTags = 'http://data.gdeltproject.org/gdeltv2_cloudvision/' %>% paste0(isoPeriod, '.imagetags.csv.gz'),
+      urlTranslationTags = 'http://data.gdeltproject.org/gdeltv2_cloudvision/' %>% paste0(isoPeriod, '.translation.imagetags.csv.gz')
     ) %>%
     mutate(dateData = dateTimeData %>% as.Date()) %>%
     arrange(desc(dateTimeData))
@@ -4745,7 +4747,6 @@ get_data_vgkg_dates <-
 
 parse_xml_extra <-
   function(x =  "<PAGE_LINKS>http://therealdeal.com/2015/05/07/hfz-secures-1b-in-financing-for-high-line-site/;http://therealdeal.com/2015/09/10/uk-hedge-fund-loaning-850m-for-relateds-hudson-yards-resi-tower/;http://therealdeal.com/2016/02/05/hfz-seeks-250m-from-eb-5-investors-for-high-line-condos/;http://therealdeal.com/2016/07/28/macklowe-seeking-1b-loan-for-1-wall-street-conversion/;http://therealdeal.com/2016/08/18/first-look-floor-plans-at-hfzs-high-line-development/;http://therealdeal.com/2016/10/05/inside-gary-barnetts-game-of-real-estate-tetris/;http://therealdeal.com/2016/10/06/six-senses-to-open-hotel-at-hfzs-high-line-project/;http://therealdeal.com/issues_articles/whos-bankrolling-the-boom/;http://therealdeal.com/issues_articles/ziel-feldman-it-was-worth-every-penny/</PAGE_LINKS><PAGE_PRECISEPUBTIMESTAMP>20161025180000</PAGE_PRECISEPUBTIMESTAMP>") {
-
     safe_xml <-
       purrr::possibly(read_xml, otherwise = NULL)
 
@@ -4754,8 +4755,7 @@ parse_xml_extra <-
       purrr::invoke(paste0, .) %>%
       safe_xml()
 
-    if(gdelt_xml %>% length > 0) {
-
+    if (gdelt_xml %>% length > 0) {
       values <-
         gdelt_xml %>%
         xml2::xml_children() %>%
@@ -5796,12 +5796,22 @@ get_data_gkg_tv <-
 
     gkg_tv_data <-
       gkg_tv_data %>%
-      mutate(docDetails = documentSource %>% sub('\\_', '\\-',.) %>% sub('\\_', '\\-',.)  %>% sub('\\_', '\\-',.)) %>%
-      separate(docDetails, sep = '\\-', into = c('idTVNetwork', 'date', 'time', 'nameTVShow')) %>%
+      mutate(docDetails = documentSource %>% sub('\\_', '\\-', .) %>% sub('\\_', '\\-', .)  %>% sub('\\_', '\\-', .)) %>%
+      separate(
+        docDetails,
+        sep = '\\-',
+        into = c('idTVNetwork', 'date', 'time', 'nameTVShow')
+      ) %>%
       dplyr::select(-c(date, time)) %>%
-      mutate(nameTVShow = nameTVShow %>% str_replace_all('\\_', ' '),
-             urlArchiveVideo = documentSource %>% paste0('https://archive.org/details/',.)) %>%
-      dplyr::select(idGKG:documentSource,urlArchiveVideo, idTVNetwork,nameTVShow, everything())
+      mutate(
+        nameTVShow = nameTVShow %>% str_replace_all('\\_', ' '),
+        urlArchiveVideo = documentSource %>% paste0('https://archive.org/details/', .)
+      ) %>%
+      dplyr::select(idGKG:documentSource,
+                    urlArchiveVideo,
+                    idTVNetwork,
+                    nameTVShow,
+                    everything())
 
     if (return_message) {
       "Downloaded, parsed and imported " %>%
@@ -5865,10 +5875,8 @@ get_data_gkg_tv_day <- function(date_data = "2016-06-01",
   all_data <-
     urls %>%
     purrr::map_df(function(x) {
-      get_data_gkg_tv(
-        url = x,
-        return_message = return_message
-      )
+      get_data_gkg_tv(url = x,
+                      return_message = return_message)
     }) %>%
     distinct() %>%
     suppressMessages() %>%
@@ -5896,26 +5904,27 @@ get_data_gkg_tv_day <- function(date_data = "2016-06-01",
 #' @import purrr
 #' @importFrom purrr map_df
 #' @examples
-get_data_gkg_tv_days <- function(dates = c("2016-06-01", "2016-02-01"),
-                                 only_most_recent = F,
-                                 return_message = T) {
-  get_data_gkg_tv_day_safe <-
-    failwith(NULL, get_data_gkg_tv_day)
+get_data_gkg_tv_days <-
+  function(dates = c("2016-06-01", "2016-02-01"),
+           only_most_recent = F,
+           return_message = T) {
+    get_data_gkg_tv_day_safe <-
+      failwith(NULL, get_data_gkg_tv_day)
 
-  all_data <-
-    dates %>%
-    purrr::map_df(
-      function(x)
-        get_data_gkg_tv_day_safe(
-          date_data = x,
-          only_most_recent = only_most_recent,
-          return_message = return_message
-        )
-    ) %>%
-    suppressWarnings()
+    all_data <-
+      dates %>%
+      purrr::map_df(
+        function(x)
+          get_data_gkg_tv_day_safe(
+            date_data = x,
+            only_most_recent = only_most_recent,
+            return_message = return_message
+          )
+      ) %>%
+      suppressWarnings()
 
-  return(all_data)
-}
+    return(all_data)
+  }
 
 
 #' Convert date columns to numeric
@@ -5936,7 +5945,6 @@ date_columns_to_numeric <-
            column_keyword = 'date',
            exclude_col_type = c('character'),
            return_message = T) {
-
     name_df <-
       data %>%
       dplyr::select(matches(column_keyword)) %>%
