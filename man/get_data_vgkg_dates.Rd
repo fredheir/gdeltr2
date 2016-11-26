@@ -5,8 +5,8 @@
 \title{Gets CV Data for stated periods}
 \usage{
 get_data_vgkg_dates(dates = c("2016-06-09", "2016-06-08"),
-  include_translations = F, only_most_recent = F, remove_json_column = T,
-  return_message = T)
+  include_translations = FALSE, only_most_recent = FALSE,
+  remove_json_column = TRUE, return_message = TRUE)
 }
 \description{
 Gets CV Data for stated periods

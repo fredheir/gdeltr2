@@ -52,7 +52,7 @@ get_urls_gkg_15_minute_log <- function() {
   log_df <-
     log_df %>%
     dplyr::mutate(
-      dateTimeData = timestamp %>% as.numeric %>% ymd_hms() %>% with_tz(Sys.timezone()),
+      dateTimeData = timestamp %>% as.numeric %>% lubridate::ymd_hms() %>% lubridate::with_tz(Sys.timezone()),
       dateData = dateTimeData %>% as.Date(),
       typeFile = typeFile %>% str_to_lower(),
       idFile = idFile %>% as.integer()
@@ -117,7 +117,7 @@ get_urls_gdelt_event_log <- function(return_message = T) {
     bind_rows(
       urlData %>%
         dplyr::filter(isDaysData == T) %>%
-        dplyr::mutate(dateData = periodData %>% ymd %>% as.Date())
+        dplyr::mutate(dateData = periodData %>% lubridate::ymd() %>% as.Date())
     ) %>%
     dplyr::select(idHash,
                   dateData,
@@ -222,7 +222,7 @@ get_urls_gkg_daily_summaries <-
       dplyr::mutate(
         isZipFile = ifelse(isZipFile == "zip", T, F),
         isCountFile = ifelse(nameFile == 'gkgcounts', T, F),
-        dateData = dateData %>% ymd %>% as.Date()
+        dateData = dateData %>% lubridate::ymd() %>% as.Date()
       ) %>%
       dplyr::select(-c(nameFile, typeFile)) %>%
       dplyr::select(idHash,
@@ -565,7 +565,7 @@ get_data_gdelt_period_event_totals <-
     if (period == 'daily') {
       period_data <-
         period_data %>%
-        mutate(dateData = idDate %>% ymd %>% as.Date()) %>%
+        mutate(dateData = idDate %>% lubridat::ymd() %>% as.Date()) %>%
         dplyr::select(periodData, isByCountry, dateData, everything())
     }
 
@@ -1893,22 +1893,40 @@ get_clean_count_data <-
         group_by(idGKG) %>%
         mutate(count = 1:n()) %>%
         ungroup %>%
-        mutate(count = count - 1) %>%
-        gather(item, value, -c(idGKG, count), na.rm = T) %>%
-        mutate(item = ifelse(count == 0, item, item %>% paste0(count)),
-               value = value %>% str_trim) %>%
-        distinct() %>%
-        separate(
-          idGKG,
-          into = c('GKG', 'dateTime'),
-          sep = '\\-',
-          remove = F
-        ) %>%
-        mutate(dateTime = dateTime %>% as.numeric) %>%
-        arrange(dateTime, count) %>%
-        dplyr::select(-c(dateTime, GKG))
-
-
+        mutate(count = count - 1)
+      if ('charLoc' %in% names(clean_data)) {
+        clean_data <-
+          clean_data %>%
+          gather(item, value, -c(idGKG, count, charLoc), na.rm = T) %>%
+          mutate(item = ifelse(count == 0, item, item %>% paste0(count)),
+                 value = value %>% str_trim) %>%
+          distinct() %>%
+          separate(
+            idGKG,
+            into = c('GKG', 'dateTime'),
+            sep = '\\-',
+            remove = F
+          ) %>%
+          mutate(dateTime = dateTime %>% as.numeric) %>%
+          arrange(dateTime, count) %>%
+          dplyr::select(-c(dateTime, GKG))
+      } else {
+        clean_data <-
+          clean_data %>%
+          gather(item, value, -c(idGKG, count), na.rm = T) %>%
+          mutate(item = ifelse(count == 0, item, item %>% paste0(count)),
+                 value = value %>% str_trim) %>%
+          distinct() %>%
+          separate(
+            idGKG,
+            into = c('GKG', 'dateTime'),
+            sep = '\\-',
+            remove = F
+          ) %>%
+          mutate(dateTime = dateTime %>% as.numeric) %>%
+          arrange(dateTime, count) %>%
+          dplyr::select(-c(dateTime, GKG))
+      }
     }
 
     if (return_wide) {
@@ -2474,7 +2492,7 @@ parse_gkg_mentioned_names <- function(gdelt_data,
                                       return_wide = T) {
   parse_mentioned_names_counts <-
     function(field = "Interior Minister Chaudhry Nisar Ali Khan,47;Mullah Mansour,87;Afghan Taliban,180;Mullah Mansour,382;Mullah Mansor,753;Mullah Mansour,815;Mullah Mansour,1025",
-             return_wide = F) {
+             return_wide = return_wide) {
       options(scipen = 99999)
       if (field %>% is.na) {
         if (return_wide) {
@@ -2502,13 +2520,14 @@ parse_gkg_mentioned_names <- function(gdelt_data,
           separate(field,
                    into = c('nameMentionedName', 'charLoc'),
                    sep = '\\,') %>%
+          mutate(charLoc = charLoc %>% as.numeric()) %>%
           suppressMessages() %>%
           suppressWarnings()
 
         if (return_wide) {
           fields_df <-
             fields_df %>%
-            gather(item, value, -idArticleMentionedName) %>%
+            gather(item, value, -c(idArticleMentionedName, charLoc)) %>%
             arrange(idArticleMentionedName) %>%
             unite(item, item, idArticleMentionedName, sep = '.')
 
@@ -2532,9 +2551,10 @@ parse_gkg_mentioned_names <- function(gdelt_data,
           field_data <-
             field_data %>%
             dplyr::select(idArticleMentionedName,
-                          nameMentionedName,
-                          charLoc) %>%
-            dplyr::mutate(charLoc = charLoc %>% as.numeric)
+                          charLoc,
+                          nameMentionedName
+                          )
+
         }
       }
 
@@ -2567,7 +2587,8 @@ parse_gkg_mentioned_names <- function(gdelt_data,
 
   all_counts <-
     all_counts %>%
-    get_clean_count_data(count_col = 'idArticleMentionedName', return_wide = return_wide) %>%
+    get_clean_count_data(count_col = 'idArticleMentionedName',
+                         return_wide = return_wide) %>%
     separate(
       idGKG,
       into = c('GKG', 'dateTime'),
@@ -4632,7 +4653,7 @@ get_data_vgkg_day <-
 
     if (!'cv_urls' %>% exists) {
       paste(
-        "To save memory and time next time you should run the function get_urls_vgkg()  and save to data frame called cv_urls"
+        "To save memory and time next time run the function get_urls_vgkg()\nand save to data frame called cv_urls"
       ) %>%
         message
       cv_urls <-
@@ -4698,22 +4719,22 @@ get_data_vgkg_day <-
 #' @importFrom purrr flatten_chr
 #' @importFrom curl curl_download
 #' @importFrom readr read_tsv
-#' @importFrom lubridate ymd_hms
-#' @importFrom lubridate with_tz
+#' @importFrom lubridate ymd_hms with_tz ymd
 #' @return
 #' @export
 #'
 #' @examples
 get_data_vgkg_dates <-
   function(dates = c("2016-06-09", "2016-06-08"),
-           include_translations = F,
-           only_most_recent = F,
-           remove_json_column = T,
-           return_message = T) {
+           include_translations = FALSE,
+           only_most_recent = FALSE,
+           remove_json_column = TRUE,
+           return_message = TRUE) {
     if (only_most_recent) {
       dates <-
         Sys.Date()
     }
+
     get_data_vgkg_day_safe <-
       failwith(NULL, get_data_vgkg_day)
 
