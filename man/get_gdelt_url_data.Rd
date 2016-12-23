@@ -2,7 +2,7 @@
 % Please edit documentation in R/gdelt_event_gkg.R
 \name{get_gdelt_url_data}
 \alias{get_gdelt_url_data}
-\title{Title}
+\title{Get GDELT url data}
 \usage{
 
   get_gdelt_url_data(url = "http://data.gdeltproject.org/gdeltv2/20160531000000.gkg.csv.zip",
@@ -14,6 +14,6 @@
 \item{return_message}{}
 }
 \description{
-Title
+Get GDELT url data
 }
 

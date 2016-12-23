@@ -41,7 +41,8 @@ get_urls_gkg_15_minute_log <- function() {
       into = c('idFile', 'idHash', 'urlData'),
       sep = '\\ '
     ) %>%
-    suppressWarnings()
+    suppressWarnings() %>%
+    suppressMessages()
 
   log_df <-
     log_df %>%
@@ -93,7 +94,9 @@ get_urls_gdelt_event_log <- function(return_message = T) {
       urlData = 'http://data.gdeltproject.org/events/' %>% paste0(stemData),
       idDatabaseGDELT = 'EVENTS',
       isZipFile = ifelse(stemData %>% str_detect(".zip"), T, F)
-    )
+    ) %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
   urlData <-
     urlData %>%
@@ -168,9 +171,12 @@ get_urls_gkg_most_recent_log <- function() {
       col = X1,
       into = c('idFile', 'idHash', 'urlData'),
       sep = '\\ '
-    )
+    ) %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
-  log_df %<>%
+  log_df <-
+    log_df %>%
     dplyr::mutate(dateTimeFile = urlData %>% str_replace_all('http://data.gdeltproject.org/gdeltv2/', '')) %>%
     tidyr::separate(dateTimeFile,
                     into = c('timestamp', 'nameFile', 'typeFile', 'isZip')) %>%
@@ -230,7 +236,9 @@ get_urls_gkg_daily_summaries <-
                     isZipFile,
                     isCountFile,
                     urlData,
-                    everything())
+                    everything()) %>%
+      suppressWarnings() %>%
+      suppressMessages()
 
     if (remove_count_files) {
       urlData <-
@@ -275,7 +283,9 @@ get_codes_gcam <- function() {
     'http://data.gdeltproject.org/documentation/GCAM-MASTER-CODEBOOK.TXT'
   gcam_data <-
     url %>%
-    read_tsv()
+    read_tsv() %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
   names(gcam_data) <-
     c(
@@ -306,7 +316,9 @@ get_codes_cameo_religion <- function() {
     'http://gdeltproject.org/data/lookups/CAMEO.religion.txt'
   code_df <-
     url %>%
-    readr::read_tsv
+    readr::read_tsv() %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
   names(code_df) <-
     c('codeCAMEOReligion', 'nameCAMEOReligion')
@@ -329,7 +341,9 @@ get_codes_cameo_country <- function() {
     'http://gdeltproject.org/data/lookups/CAMEO.country.txt'
   code_df <-
     url %>%
-    read_tsv
+    read_tsv() %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
   names(code_df) <-
     c('codeISO', 'nameCountry')
@@ -350,7 +364,9 @@ get_codes_cameo_type <- function() {
   url <- 'http://gdeltproject.org/data/lookups/CAMEO.type.txt'
   code_df <-
     url %>%
-    read_tsv
+    read_tsv() %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
   names(code_df) <-
     c('codeCAMEOType', 'nameCAMEOType')
@@ -372,7 +388,9 @@ get_codes_cameo_events <- function() {
     'http://gdeltproject.org/data/lookups/CAMEO.eventcodes.txt'
   code_df <-
     url %>%
-    read_tsv
+    read_tsv() %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
   names(code_df) <-
     c('idCAMEOEvent', 'descriptionCAMEOEvent')
@@ -401,7 +419,9 @@ get_codes_cameo_known_groups <- function() {
     'http://gdeltproject.org/data/lookups/CAMEO.knowngroup.txt'
   code_df <-
     url %>%
-    read_tsv
+    read_tsv() %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
   names(code_df) <-
     c('codeCAMEOGroup', 'nameCAMEOGroup')
@@ -421,7 +441,9 @@ get_codes_cameo_ethnic <- function() {
     'http://gdeltproject.org/data/lookups/CAMEO.ethnic.txt'
   code_df <-
     url %>%
-    read_tsv
+    read_tsv() %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
   names(code_df) <-
     c('codeCAMEOEthnicity', 'nameCAMEOEthnicity')
@@ -442,7 +464,9 @@ get_codes_gkg_themes <- function(split_word_bank_codes = F) {
 
   code_df <-
     url %>%
-    read_tsv(col_names = F)
+    read_tsv(col_names = F) %>%
+    suppressWarnings() %>%
+    suppressMessages()
 
   names(code_df) <-
     c('codeGKGTheme')
@@ -935,7 +959,7 @@ get_schema_gkg_mentions <- function() {
   return(mentions_schema)
 }
 
-#' Title
+#' Get GDELT url data
 #'
 #' @param url
 #' @param file_directory
@@ -947,7 +971,8 @@ get_schema_gkg_mentions <- function() {
 #'
 #' @return
 #' @export
-#'
+#' @import readr purrr curl dplyr lubridate tidyr stringr
+#' @importFrom urltools domain
 #' @examples
 get_gdelt_url_data <-
   function(url = "http://data.gdeltproject.org/gdeltv2/20160531000000.gkg.csv.zip",
@@ -976,14 +1001,16 @@ get_gdelt_url_data <-
         read_tsv(col_names = F,
                  n_max = 1) %>% ncol %>%
         suppressMessages() %>%
-        readr::parse_number
+        suppressWarnings() %>%
+        readr::parse_number()
 
 
       if (gdelt_cols == 16) {
         gdelt_data <-
           con %>%
           read_tsv(col_names = F) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
 
         names(gdelt_data) <-
           get_schema_gkg_mentions() %>% .$nameActual
@@ -1020,7 +1047,8 @@ get_gdelt_url_data <-
         gdelt_data <-
           con %>%
           read_tsv(col_names = T) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
 
         names(gdelt_data) <-
           get_schema_gkg_counts() %>% .$nameActual
@@ -1052,7 +1080,8 @@ get_gdelt_url_data <-
         gdelt_data <-
           con %>%
           readr::read_tsv(col_names = F) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
 
         names(gdelt_data) <-
           get_schema_gdelt_events() %>% .$nameActual
@@ -1089,7 +1118,8 @@ get_gdelt_url_data <-
         gdelt_data <-
           con %>%
           readr::read_tsv(col_names = F) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
 
         names(gdelt_data) <-
           c(
@@ -1185,7 +1215,9 @@ get_gdelt_url_data <-
         gdelt_data <-
           con %>%
           readr::read_tsv(col_names = F) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
+
         names(gdelt_data) <-
           c(
             "idGlobalEvent",
@@ -1283,7 +1315,8 @@ get_gdelt_url_data <-
         gdelt_data <-
           con %>%
           readr::read_tsv(col_names = T) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
 
         schema_df <-
           get_schema_gkg_general()
@@ -1310,7 +1343,8 @@ get_gdelt_url_data <-
         gdelt_data <-
           con %>%
           readr::read_tsv(col_names = F) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
 
         schema_df <-
           get_schema_gkg_general()
@@ -1352,7 +1386,7 @@ get_gdelt_url_data <-
 
       }
       con %>%
-        unlink
+        unlink()
     }  else {
       only_folder <-
         !folder_name %>% purrr::is_null() &
@@ -1460,7 +1494,8 @@ get_gdelt_url_data <-
         gdelt_data <-
           csv_file_loc %>%
           read_tsv(col_names = T) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
 
         names(gdelt_data) <-
           get_schema_gkg_counts() %>% .$nameActual
@@ -1492,7 +1527,8 @@ get_gdelt_url_data <-
         gdelt_data <-
           csv_file_loc %>%
           readr::read_tsv(col_names = F) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
 
         names(gdelt_data) <-
           get_schema_gdelt_events() %>% .$nameActual
@@ -1529,7 +1565,8 @@ get_gdelt_url_data <-
         gdelt_data <-
           csv_file_loc %>%
           readr::read_tsv(col_names = F) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
 
         names(gdelt_data) <-
           c(
@@ -1625,7 +1662,9 @@ get_gdelt_url_data <-
         gdelt_data <-
           csv_file_loc %>%
           readr::read_tsv(col_names = F) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
+
         names(gdelt_data) <-
           c(
             "idGlobalEvent",
@@ -1723,7 +1762,8 @@ get_gdelt_url_data <-
         gdelt_data <-
           csv_file_loc %>%
           readr::read_tsv(col_names = T) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
 
         schema_df <-
           get_schema_gkg_general()
@@ -1750,7 +1790,8 @@ get_gdelt_url_data <-
         gdelt_data <-
           csv_file_loc %>%
           readr::read_tsv(col_names = F) %>%
-          suppressWarnings()
+          suppressWarnings() %>%
+          suppressMessages()
 
         schema_df <-
           get_schema_gkg_general()
@@ -4061,13 +4102,12 @@ get_data_gkg_day_detailed <-
         dplyr::filter(nameFile == table_name) %>%
         .$urlData
     } else {
-      if (!'gdelt_detailed_logs' %>% exists) {
-        paste(
-          "To save memory and time next time you should run the function get_urls_gkg_15_minute_log and save to data frame called gdelt_detailed_logs"
-        ) %>%
-          message
+      if (!'gdelt_detailed_logs' %>% exists()) {
         gdelt_detailed_logs <-
           get_urls_gkg_15_minute_log()
+
+        assign(x = 'gdelt_detailed_logs', eval(gdelt_detailed_logs), env = .GlobalEnv)
+
       }
 
       urls <-
@@ -4231,12 +4271,12 @@ get_data_gkg_day_summary <- function(date_data = "2016-06-01",
   if (date_data > Sys.Date()) {
     stop("Sorry data can't go into the future")
   }
-  if (!'summary_data_urls' %>% exists) {
-    paste0(
-      "To save time and memory next time you should run the function get_urls_gkg_daily_summaries and save it to a data frame called summary_data_urls"
-    ) %>% message
+  if (!'summary_data_urls' %>% exists()) {
+
     summary_data_urls <-
       get_urls_gkg_daily_summaries(return_message = return_message)
+
+    assign(x = 'summary_data_urls', eval(summary_data_urls), env = .GlobalEnv)
   }
 
   if (is_count_file) {
@@ -4383,13 +4423,11 @@ get_data_gdelt_period_event <- function(period = 1983,
     period %>%
     as.character()
 
-  if (!'gdelt_event_urls' %>% exists) {
-    paste0(
-      "To save memory and time you want to run the function get_urls_gdelt_event_log into a data_frame called gdelt_event_urls"
-    ) %>%
-      message()
+  if (!'gdelt_event_urls' %>% exists()) {
     gdelt_event_urls <-
       get_urls_gdelt_event_log(return_message = return_message)
+
+    assign(x = 'gdelt_event_urls', eval(gdelt_event_urls), env = .GlobalEnv)
   }
   periods <-
     gdelt_event_urls$periodData
@@ -4560,7 +4598,8 @@ get_urls_vgkg <- function() {
 get_urls_vgkg_most_recent  <- function() {
   log_df <-
     'http://data.gdeltproject.org/gdeltv2_cloudvision/lastupdate.txt' %>%
-    read_tsv(col_names = F)
+    read_tsv(col_names = F) %>%
+    suppressMessages()
 
   names(log_df) <-
     c('value')
@@ -4592,10 +4631,11 @@ get_data_vgkg_url <-
     }
     cloud_vision_data <-
       url %>%
-      curl::curl %>%
+      curl::curl() %>%
       gzcon() %>%
       read_tsv(col_names = F) %>%
-      suppressWarnings()
+      suppressWarnings() %>%
+      suppressMessages()
 
     names(cloud_vision_data) <-
       get_vgkg_schema() %>% .$nameActual
@@ -4651,13 +4691,12 @@ get_data_vgkg_day <-
       stop("Sorry data can't go into the future")
     }
 
-    if (!'cv_urls' %>% exists) {
-      paste(
-        "To save memory and time next time run the function get_urls_vgkg()\nand save to data frame called cv_urls"
-      ) %>%
-        message
+    if (!'cv_urls' %>% exists()) {
+
       cv_urls <-
         get_urls_vgkg()
+
+      assign(x = 'get_urls_vgkg', eval(get_urls_vgkg), env = .GlobalEnv)
     }
     urls <-
       cv_urls %>%
@@ -5633,7 +5672,8 @@ get_urls_gkgtv_most_recent_log <- function() {
   urlData <-
     'http://data.gdeltproject.org/gdeltv2_iatelevision/lastupdate.txt' %>%
     readr::read_tsv(col_names = F) %>%
-    dplyr::select(-1)
+    dplyr::select(-1) %>%
+    suppressMessages()
 
   names(urlData) <-
     c('idHash', 'urlData')
@@ -5746,7 +5786,8 @@ get_urls_gkg_tv_daily_summaries <-
     urlData <-
       url %>%
       readr::read_tsv(col_names = F) %>%
-      dplyr::select(-1)
+      dplyr::select(-1) %>%
+      suppressMessages()
 
     names(urlData) <-
       c('idHash', 'urlData')
@@ -5795,10 +5836,11 @@ get_data_gkg_tv <-
 
     gkg_tv_data <-
       url %>%
-      curl::curl %>%
+      curl::curl() %>%
       gzcon() %>%
       read_tsv(col_names = F) %>%
-      suppressWarnings()
+      suppressWarnings() %>%
+      suppressMessages()
 
     names(gkg_tv_data) <-
       get_tv_schema() %>% .$nameActual
@@ -5877,13 +5919,11 @@ get_data_gkg_tv_day <- function(date_data = "2016-06-01",
       gkg_recent %>%
       .$urlData
   } else {
-    if (!'gkg_tv_urls' %>% exists) {
-      paste(
-        "To save memory and time next time you should run the function get_urls_gkg_tv_daily_summaries and save to data frame called gkg_tv_urls"
-      ) %>%
-        message
+    if (!'gkg_tv_urls' %>% exists()) {
       gkg_tv_urls <-
         get_urls_gkg_tv_daily_summaries()
+
+      assign(x = 'gkg_tv_urls', eval(gkg_tv_urls), env = .GlobalEnv)
     }
 
     urls <-
