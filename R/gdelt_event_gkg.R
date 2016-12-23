@@ -1003,8 +1003,6 @@ get_gdelt_url_data <-
         suppressMessages() %>%
         suppressWarnings() %>%
         readr::parse_number()
-
-
       if (gdelt_cols == 16) {
         gdelt_data <-
           con %>%
