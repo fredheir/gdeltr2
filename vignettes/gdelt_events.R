@@ -1,11 +1,11 @@
-library(gdeltr2)
+library(gdeltr3)
 
 
 # read the data -----------------------------------------------------------
 
 
 setwd("~")
-gdeltr2::load_needed_packages(c('magrittr', 'dplyr', 'threejs', 'ggplot2'))
+gdeltr3::load_needed_packages(c('magrittr', 'dplyr', 'threejs', 'ggplot2'))
 events1983 <-
   get_data_gdelt_periods_event(periods = 1983)
 
