@@ -1,7 +1,7 @@
-gdeltr2
+gdeltr3
 ================
 
-`gdeltr2` — **R's modern GDELT Project interface**
+`gdeltr3` — **R's modern GDELT Project interface**
 
 #### <strong>What is the GDELT Project?</strong>
 
