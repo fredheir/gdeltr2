@@ -1404,7 +1404,7 @@ get_gdelt_url_data <-
         file_directory
 
       file_path <-
-        temp.dir %>% str_split('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
+        temp.dir %>% strsplit('/') %>% flatten_chr() %>% .[1:length(.)] %>% paste0(collapse = '/')
       if (remove_existing_folder) {
         if (dir.exists(paths = file_path)) {
           "rm -R " %>%
@@ -2099,7 +2099,7 @@ parse_gkg_mentioned_numerics <- function(gdelt_data,
       } else {
         fields <-
           field %>%
-          str_split('\\;') %>%
+          strsplit('\\;') %>%
           flatten_chr() %>%
           .[!. %in% '']
 
@@ -2255,7 +2255,7 @@ parse_gkg_mentioned_people <- function(gdelt_data,
       } else {
         fields <-
           field %>%
-          str_split('\\;') %>%
+          strsplit('\\;') %>%
           flatten_chr() %>%
           .[!. %in% '']
 
@@ -2416,7 +2416,7 @@ parse_gkg_mentioned_organizations <- function(gdelt_data,
       } else {
         fields <-
           field %>%
-          str_split('\\;') %>%
+          strsplit('\\;') %>%
           flatten_chr() %>%
           .[!. %in% '']
 
@@ -2549,7 +2549,7 @@ parse_gkg_mentioned_names <- function(gdelt_data,
       } else {
         fields <-
           field %>%
-          str_split('\\;') %>%
+          strsplit('\\;') %>%
           flatten_chr() %>%
           .[!. %in% '']
 
@@ -2701,7 +2701,7 @@ parse_gkg_mentioned_themes <- function(gdelt_data,
       } else {
         fields <-
           field %>%
-          str_split('\\;') %>%
+          strsplit('\\;') %>%
           flatten_chr() %>%
           .[!. %in% '']
 
@@ -2855,7 +2855,7 @@ parse_gkg_mentioned_social_embeds <-
         }  else {
           fields <-
             field %>%
-            str_split('\\;') %>%
+            strsplit('\\;') %>%
             flatten_chr() %>%
             .[!. %in% '']
 
@@ -2995,7 +2995,7 @@ parse_gkg_mentioned_article_tone <- function(gdelt_data,
       }  else {
         fields <-
           field %>%
-          str_split('\\,') %>%
+          strsplit('\\,') %>%
           flatten_chr() %>%
           .[!. %in% ''] %>%
           as.numeric()
@@ -3126,7 +3126,7 @@ parse_gkg_mentioned_event_counts <- function(gdelt_data,
       }  else {
         fields <-
           field %>%
-          str_split('\\;') %>%
+          strsplit('\\;') %>%
           flatten_chr() %>%
           .[!. %in% '']
 
@@ -3338,7 +3338,7 @@ parse_gkg_mentioned_locations <- function(gdelt_data,
       }  else {
         fields <-
           field %>%
-          str_split('\\;') %>%
+          strsplit('\\;') %>%
           flatten_chr() %>%
           .[!. %in% '']
 
@@ -3541,7 +3541,7 @@ parse_gkg_mentioned_dates <- function(gdelt_data,
       }  else {
         fields <-
           field %>%
-          str_split('\\;') %>%
+          strsplit('\\;') %>%
           flatten_chr() %>%
           .[!. %in% '']
 
@@ -3677,7 +3677,7 @@ parse_gkg_mentioned_quotes <- function(gdelt_data,
       }  else {
         fields <-
           field %>%
-          str_split('\\#') %>%
+          strsplit('\\#') %>%
           flatten_chr() %>%
           .[!. %in% '']
 
@@ -3813,7 +3813,7 @@ parse_gkg_mentioned_gcams <- function(gdelt_data,
       }  else {
         fields <-
           field %>%
-          str_split('\\,') %>%
+          strsplit('\\,') %>%
           flatten_chr() %>%
           .[!. %in% '']
 
@@ -3974,7 +3974,7 @@ parse_gkg_mentioned_source_data <-
         }  else {
           fields <-
             field %>%
-            str_split('\\;') %>%
+            strsplit('\\;') %>%
             flatten_chr() %>%
             .[!. %in% ''] %>%
             unique
@@ -4603,7 +4603,7 @@ get_urls_vgkg_most_recent  <- function() {
     c('value')
 
   values <-
-    log_df$value %>% str_split("\\ ") %>%
+    log_df$value %>% strsplit("\\ ") %>%
     flatten_chr
 
 
@@ -4837,7 +4837,7 @@ parse_xml_extra <-
             xml_df %>%
             filter(item == x) %>%
             .$value %>%
-            str_split('\\;') %>%
+            strsplit('\\;') %>%
             flatten_chr()
 
           data_frame(item = x, value = item_value) %>%
@@ -5079,7 +5079,7 @@ parse_xml_labels <-
       if (xmlData %>% str_detect('<RECORD>')) {
         xmlData <-
           xmlData %>%
-          str_split('<RECORD>') %>%
+          strsplit('<RECORD>') %>%
           flatten_chr()
       }
 
@@ -5157,7 +5157,7 @@ parse_xml_landmarks <-
       if (xmlData %>% str_detect('<RECORD>')) {
         xmlData <-
           xmlData %>%
-          str_split('<RECORD>') %>%
+          strsplit('<RECORD>') %>%
           flatten_chr()
       }
 
@@ -5253,7 +5253,7 @@ parse_xml_logos <-
     } else {
       xmlData <-
         xmlData %>%
-        str_split('<RECORD>') %>%
+        strsplit('<RECORD>') %>%
         flatten_chr()
 
       xml_df <-
@@ -5337,7 +5337,7 @@ parse_xml_safe_search <-
     } else {
       xmlData <-
         xmlData %>%
-        str_split('<RECORD>') %>%
+        strsplit('<RECORD>') %>%
         flatten_chr()
 
       xml_df <-
@@ -5421,7 +5421,7 @@ parse_xml_faces <-
     } else {
       xmlData <-
         xmlData %>%
-        str_split('<RECORD>') %>%
+        strsplit('<RECORD>') %>%
         flatten_chr()
 
       xml_df <-
@@ -5524,7 +5524,7 @@ parse_xml_ocr <-
     } else {
       xmlData <-
         xmlData %>%
-        str_split('<RECORD>') %>%
+        strsplit('<RECORD>') %>%
         flatten_chr() %>%
         gsub('\\n', '', .)
 
@@ -5603,7 +5603,7 @@ parse_language_types <-
     } else {
       xmlData <-
         xmlData %>%
-        str_split('\\,') %>%
+        strsplit('\\,') %>%
         flatten_chr()
 
       xml_df <-
