@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-`gdeltr3` — **R's modern GDELT Project interface**
+`gdeltr` — **R's modern GDELT Project interface**
 
 #### <strong>What is the GDELT Project?</strong>
 
